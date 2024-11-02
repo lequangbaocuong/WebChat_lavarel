@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import './styles/tailwind.css';
 import { Link } from 'react-router-dom';
+import { handleEmailChange, handlePasswordChange, selectDomain } from './utils/validators';
+import { BiLoaderAlt } from "react-icons/bi";
 
 const SignUpPage = () => {
   const [username, setUsername] = useState("");
@@ -10,6 +12,10 @@ const SignUpPage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({ email: "", password: "", passwordMatch: "" });
+  const [loading, setLoading] = useState(false);
+
+  const commonDomains = ["@gmail.com", "@yahoo.com", "@outlook.com", "@hotmail.com"];
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const handleShowPassword = () => setShowPassword(!showPassword);
 
@@ -19,33 +25,6 @@ const SignUpPage = () => {
     return regex.test(email);
   };
 
-  const handleEmailChange = (e) => {
-    const value = e.target.value;
-    setEmail(value);
-    setErrors((prev) => ({
-      ...prev,
-      email: validateEmail(value) ? "" : "Email không đúng định dạng",
-    }));
-  };
-
-  const handlePasswordChange = (e) => {
-    const value = e.target.value;
-    setPassword(value);
-
-    // Check if password is greater than 8 characters
-    if (value.length < 8) {
-      setErrors((prev) => ({ ...prev, password: "Mật khẩu phải lớn hơn 8 ký tự", passwordMatch: "" }));
-    } else {
-      setErrors((prev) => ({ ...prev, password: "" })); // Clear password error if valid length
-
-      // Reset password match error if confirmPassword is empty
-      if (confirmPassword && value !== confirmPassword) {
-        setErrors((prev) => ({ ...prev, passwordMatch: "Mật khẩu không khớp" }));
-      } else {
-        setErrors((prev) => ({ ...prev, passwordMatch: "" })); // Clear password match error if valid
-      }
-    }
-  };
 
   const handleConfirmPasswordChange = (e) => {
     const value = e.target.value;
@@ -56,8 +35,12 @@ const SignUpPage = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    // Simulating API call
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setLoading(false);
     // Check if there are any validation errors
     if (!errors.email && !errors.password && !errors.passwordMatch && email && password && confirmPassword) {
       // Proceed with signup logic here
@@ -88,13 +71,31 @@ const SignUpPage = () => {
           <div>
             <input
               id="email"
+              name="email"
               type="email"
+              autoComplete="email"
+              required
+              className={`appearance-none rounded-lg relative block w-full px-3 py-2 border ${errors.email ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm transition-all duration-200`}
               placeholder="Email address"
               value={email}
-              onChange={handleEmailChange}
-              className={`appearance-none rounded-lg block w-full px-3 py-2 border ${errors.email ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
-              required
+              onChange={(e) => handleEmailChange(e, setEmail, setShowSuggestions, setErrors)}
+              aria-invalid={errors.email ? "true" : "false"}
+              aria-describedby="email-error"
             />
+            {showSuggestions && (
+              <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg mt-1 shadow-lg">
+                {commonDomains.map((domain) => (
+                  <button
+                    key={domain}
+                    type="button"
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
+                    onClick={() => selectDomain(email, domain, setEmail, setShowSuggestions, setErrors)}
+                  >
+                    {email.split("@")[0] + domain}
+                  </button>
+                ))}
+              </div>
+            )}
             {errors.email && (
               <p className="mt-2 text-sm text-red-600">{errors.email}</p>
             )}
@@ -103,12 +104,16 @@ const SignUpPage = () => {
           <div className="relative">
             <input
               id="password"
+              name="password"
               type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              required
+              className={`appearance-none rounded-lg relative block w-full px-3 py-2 border ${errors.password ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm transition-all duration-200`}
               placeholder="Password"
               value={password}
-              onChange={handlePasswordChange}
-              className={`appearance-none rounded-lg block w-full px-3 py-2 border ${errors.password ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
-              required
+              onChange={(e) => handlePasswordChange(e, setPassword, setErrors)}
+              aria-invalid={errors.password ? "true" : "false"}
+              aria-describedby="password-error"
             />
             {errors.password && (
               <p className="mt-2 text-sm text-red-600">{errors.password}</p>
@@ -157,7 +162,11 @@ const SignUpPage = () => {
             className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
             disabled={errors.email || errors.password || errors.passwordMatch}
           >
-            Đăng ký
+            {loading ? (
+              <BiLoaderAlt className="animate-spin h-5 w-5" />
+            ) : (
+              "Sign in"
+            )}
           </button>
         </form>
 
