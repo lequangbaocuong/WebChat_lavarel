@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { FaEye, FaEyeSlash, FaGoogle, FaGithub, FaMicrosoft } from "react-icons/fa";
 import { BiLoaderAlt } from "react-icons/bi";
 import './styles/tailwind.css';
+import { Link } from 'react-router-dom';
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -24,7 +25,7 @@ const LoginPage = () => {
     setShowSuggestions(!value.includes("@") && value.length > 0);
     setErrors(prev => ({
       ...prev,
-      email: validateEmail(value) ? "" : "Invalid email format"
+      email: validateEmail(value) ? "" : "Email không đúng đinh dạng"
     }));
   };
 
@@ -33,7 +34,7 @@ const LoginPage = () => {
     setPassword(value);
     setErrors(prev => ({
       ...prev,
-      password: value.length >= 8 ? "" : "Password must be at least 8 characters"
+      password: value.length >= 8 ? "" : "Mật khẩu phải lớn hơn 8 ký tự"
     }));
   };
 
@@ -58,10 +59,10 @@ const LoginPage = () => {
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-2xl transform transition-all hover:scale-[1.01]">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Welcome back
+            HKDN Chat
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Please sign in to continue
+            Vui lòng đăng nhập để tiếp tục
           </p>
         </div>
 
@@ -133,7 +134,7 @@ const LoginPage = () => {
           <div className="flex items-center justify-between">
             <div className="text-sm">
               <a href="#" className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors duration-200">
-                Forgot your password?
+                Quên mật khẩu?
               </a>
             </div>
           </div>
@@ -186,10 +187,10 @@ const LoginPage = () => {
         </form>
 
         <p className="mt-8 text-center text-sm text-gray-600">
-          Don't have an account?{" "}
-          <a href="#" className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors duration-200">
-            Sign up now
-          </a>
+          Bạn không có tài khoản?{" "}
+          <Link to="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
+            Đăng ký ngay
+          </Link>
         </p>
       </div>
     </div>
