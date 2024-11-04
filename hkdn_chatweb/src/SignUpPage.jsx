@@ -4,8 +4,12 @@ import './styles/tailwind.css';
 import { Link } from 'react-router-dom';
 import { handleEmailChange, handlePasswordChange, selectDomain } from './utils/validators';
 import { BiLoaderAlt } from "react-icons/bi";
+import { useNavigate } from "react-router-dom";
+
+import axios from "axios";
 
 const SignUpPage = () => {
+  const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,16 +41,44 @@ const SignUpPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    // Simulating API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setLoading(false);
+
+    // Validate email
+    if (!validateEmail(email)) {
+      setErrors((prev) => ({ ...prev, email: "Email không hợp lệ." }));
+      return;
+    }
+
     // Check if there are any validation errors
     if (!errors.email && !errors.password && !errors.passwordMatch && email && password && confirmPassword) {
-      // Proceed with signup logic here
-      console.log("Đăng ký thành công");
+      setLoading(true);
+      try {
+
+        // Gửi yêu cầu đăng ký đến API Laravel
+        const response = await axios.post("http://localhost:8000/api/register", {
+          username,
+          email,
+          password,
+        });
+
+        // Xử lý phản hồi từ API
+        if (response.data.success) {
+          console.log("Đăng ký thành công:", response.data);
+          // Chuyển hướng người dùng hoặc lưu token...
+          // Ví dụ:
+          navigate(response.data.redirect);
+        } else {
+          console.log("Đăng ký thất bại:", response.data.message);
+          setErrors({ ...errors, form: response.data.message });
+        }
+      } catch (error) {
+        console.error("Lỗi khi đăng ký:", error);
+        setErrors({ ...errors, form: "Đăng ký không thành công. Vui lòng thử lại." });
+      } finally {
+        setLoading(false);
+      }
     }
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 flex items-center justify-center">
@@ -55,7 +87,7 @@ const SignUpPage = () => {
           Vui lòng đăng ký
         </h2>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+        <form onSubmit={handleSubmit} className="mt-8 space-y-4" method='POST'>
           <div>
             <input
               id="username"

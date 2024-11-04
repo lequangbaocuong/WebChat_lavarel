@@ -36,13 +36,12 @@ const LoginPage = () => {
           setErrors({ ...errors, form: response.data.message });
         }
       } catch (error) {
-        console.error("Lỗi khi đăng nhập:", error);
+        console.error("Lỗi khi đăng nhập:", error.response?.data || error);
         setErrors({ ...errors, form: "Đăng nhập không thành công. Vui lòng thử lại." });
       } finally {
         await new Promise(resolve => setTimeout(resolve, 2000));
         setLoading(false);
       }
-
     }
   };
 
@@ -58,7 +57,7 @@ const LoginPage = () => {
           </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit} method="POST">
           <div className="rounded-md -space-y-px">
             <div className="relative mb-4">
               <label htmlFor="email" className="sr-only">Email address</label>
