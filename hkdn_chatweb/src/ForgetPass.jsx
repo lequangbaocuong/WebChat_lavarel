@@ -1,36 +1,40 @@
 import React, { useState } from "react";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { BiLoaderAlt } from "react-icons/bi";
-import './styles/tailwind.css';
 import { Link } from 'react-router-dom';
+import axios from "axios";
 import { handleEmailChange, selectDomain } from './utils/validators';
-import ReCAPTCHA from "react-google-recaptcha";
+import './styles/tailwind.css';
 
 const ForgetPass = () => {
     const [email, setEmail] = useState("");
     const [loading, setLoading] = useState(false);
-    const [errors, setErrors] = useState({ email: "", password: "" });
-    const [captchaToken, setCaptchaToken] = useState(null);
+    const [errors, setErrors] = useState({ email: "", form: "" });
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [successMessage, setSuccessMessage] = useState("");
 
     const commonDomains = ["@gmail.com", "@yahoo.com", "@outlook.com", "@hotmail.com"];
-    const [showSuggestions, setShowSuggestions] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!errors.email && captchaToken) {
-            setLoading(true);
-            // Simulating API call
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            setLoading(false);
-            // Handle your form submission logic here
-        } else {
-            // Handle case when captcha is not verified
-            alert("Please complete the CAPTCHA verification.");
-        }
-    };
+        setSuccessMessage(""); // Clear any previous success messages
+        setErrors({ email: "", form: "" }); // Reset errors
 
-    const onCaptchaChange = (token) => {
-        setCaptchaToken(token);
+        if (!errors.email && email) {
+            setLoading(true);
+            try {
+                const response = await axios.post("http://localhost:8000/api/forgot-password", { email });
+
+                if (response.data.success) {
+                    setSuccessMessage("Email đặt lại mật khẩu đã được gửi. Vui lòng kiểm tra hộp thư đến.");
+                } else {
+                    setErrors({ ...errors, form: response.data.message || "Yêu cầu không thành công. Vui lòng thử lại." });
+                }
+            } catch (error) {
+                console.error("Lỗi khi gửi yêu cầu đặt lại mật khẩu:", error.response?.data || error);
+                setErrors({ ...errors, form: "Có lỗi xảy ra. Vui lòng thử lại." });
+            } finally {
+                setLoading(false);
+            }
+        }
     };
 
     return (
@@ -42,7 +46,7 @@ const ForgetPass = () => {
                     </h2>
                 </div>
 
-                <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+                <form className="mt-8 space-y-6" onSubmit={handleSubmit} method="POST">
                     <div className="rounded-md -space-y-px">
                         <div className="relative mb-4">
                             <label htmlFor="email" className="sr-only">Email address</label>
@@ -79,24 +83,20 @@ const ForgetPass = () => {
                         </div>
                     </div>
 
-                    {/* Thêm reCAPTCHA */}
-                    <div className="mb-4">
-                        <ReCAPTCHA
-                            sitekey="6LcRRnMqAAAAAC2CFVSZ4YPwfrWDy3Fpqv5n1zTh"
-                            onChange={onCaptchaChange}
-                        />
-                    </div>
+                    {successMessage && (
+                        <p className="text-green-600 text-sm text-center">{successMessage}</p>
+                    )}
+                    {errors.form && (
+                        <p className="text-red-600 text-sm text-center">{errors.form}</p>
+                    )}
+
                     <div>
                         <button
                             type="submit"
-                            disabled={loading || errors.email || !captchaToken}
+                            disabled={loading || errors.email}
                             className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                         >
-                            {loading ? (
-                                <BiLoaderAlt className="animate-spin h-5 w-5" />
-                            ) : (
-                                "Xác nhận"
-                            )}
+                            {loading ? "Đang xử lý..." : "Xác nhận"}
                         </button>
                     </div>
                 </form>
