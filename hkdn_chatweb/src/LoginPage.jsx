@@ -4,6 +4,7 @@ import { BiLoaderAlt } from "react-icons/bi";
 import './styles/tailwind.css';
 import { Link } from 'react-router-dom';
 import { handleEmailChange, handlePasswordChange, selectDomain } from './utils/validators';
+import axios from "axios";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -19,9 +20,29 @@ const LoginPage = () => {
     e.preventDefault();
     if (!errors.email && !errors.password && email && password) {
       setLoading(true);
-      // Simulating API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setLoading(false);
+      try {
+        // Gửi yêu cầu đăng nhập đến API Laravel
+        const response = await axios.post("http://localhost:8000/api/login", {
+          email,
+          password,
+        });
+
+        // Xử lý phản hồi từ API
+        if (response.data.success) {
+          console.log("Đăng nhập thành công:", response.data);
+          // Chuyển hướng người dùng hoặc lưu token...
+        } else {
+          console.log("Đăng nhập thất bại:", response.data.message);
+          setErrors({ ...errors, form: response.data.message });
+        }
+      } catch (error) {
+        console.error("Lỗi khi đăng nhập:", error);
+        setErrors({ ...errors, form: "Đăng nhập không thành công. Vui lòng thử lại." });
+      } finally {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        setLoading(false);
+      }
+
     }
   };
 
