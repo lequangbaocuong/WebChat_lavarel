@@ -5,6 +5,7 @@ import './styles/tailwind.css';
 import { Link } from 'react-router-dom';
 import { handleEmailChange, handlePasswordChange, selectDomain } from './utils/validators';
 import axios from "axios";
+import { useNavigate } from 'react-router-dom';
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -15,7 +16,7 @@ const LoginPage = () => {
 
   const commonDomains = ["@gmail.com", "@yahoo.com", "@outlook.com", "@hotmail.com"];
   const [showSuggestions, setShowSuggestions] = useState(false);
-
+  const navigate = useNavigate();
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!errors.email && !errors.password && email && password) {
@@ -29,8 +30,8 @@ const LoginPage = () => {
 
         // Xử lý phản hồi từ API
         if (response.data.success) {
-          console.log("Đăng nhập thành công:", response.data);
-          // Chuyển hướng người dùng hoặc lưu token...
+          localStorage.setItem('auth_token', response.data.token);
+          navigate('/home');
         } else {
           console.log("Đăng nhập thất bại:", response.data.message);
           setErrors({ ...errors, form: response.data.message });
