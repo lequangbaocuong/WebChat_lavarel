@@ -17,6 +17,25 @@ const LoginPage = () => {
   const commonDomains = ["@gmail.com", "@yahoo.com", "@outlook.com", "@hotmail.com"];
   const [showSuggestions, setShowSuggestions] = useState(false);
   const navigate = useNavigate();
+  const [googleSignInUrl, setGoogleSignInUrl] = useState('');
+
+  // Function to handle the button click and redirect to Google OAuth URL
+  const handleGoogleSignIn = async () => {
+    try {
+      // Make an API request to your backend to get the Google sign-in URL
+      const response = await fetch('http://127.0.0.1:8000/api/google');
+      const data = await response.json();
+
+      if (data.url) {
+        // Redirect the user to the Google sign-in page
+        window.location.href = data.url;
+      } else {
+        console.error('Error: No URL returned');
+      }
+    } catch (error) {
+      console.error('Error during Google sign-in:', error);
+    }
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!errors.email && !errors.password && email && password) {
@@ -158,6 +177,7 @@ const LoginPage = () => {
             <div className="mt-6 grid grid-cols-3 gap-3">
               <button
                 type="button"
+                onClick={handleGoogleSignIn}
                 className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition-all duration-200"
               >
                 <FaGoogle className="h-5 w-5 text-red-500" />

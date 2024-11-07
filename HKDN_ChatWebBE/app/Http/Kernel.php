@@ -53,6 +53,7 @@ class Kernel extends HttpKernel
             'throttle:api',
             'bindings',
             'cors', 
+            \Illuminate\Session\Middleware\StartSession::class, // Add this line
         ],
     ];
 }

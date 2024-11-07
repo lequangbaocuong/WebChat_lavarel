@@ -1,10 +1,11 @@
 <?php
 
-use App\Http\Controllers\ForgotPasswordController;
-use App\Http\Controllers\ResetPasswordController;
-use App\Http\Controllers\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\GoogleController;
+use App\Http\Controllers\ResetPasswordController;
+use App\Http\Controllers\ForgotPasswordController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -21,3 +22,11 @@ Route::post('/reset-password', ResetPasswordController::class);
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 });
+
+Route::middleware('auth:api')->get('/user', function (Request $request) {
+    return $request->user();
+});
+
+// Google Sign In
+Route::post('/get-google-sign-in-url', [GoogleController::class, 'getGoogleSignInUrl']);
+Route::get('/callback', [GoogleController::class, 'loginCallback']);
