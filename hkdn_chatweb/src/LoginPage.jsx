@@ -1,11 +1,10 @@
 import React, { useState } from "react";
 import { FaEye, FaEyeSlash, FaGoogle, FaGithub, FaMicrosoft } from "react-icons/fa";
 import { BiLoaderAlt } from "react-icons/bi";
-import './styles/tailwind.css';
-import { Link } from 'react-router-dom';
-import { handleEmailChange, handlePasswordChange, selectDomain } from './utils/validators';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from "axios";
-import { useNavigate } from 'react-router-dom';
+import './styles/tailwind.css';
+import { handleEmailChange, handlePasswordChange, selectDomain } from './utils/validators';
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -13,53 +12,50 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({ email: "", password: "" });
-
-  const commonDomains = ["@gmail.com", "@yahoo.com", "@outlook.com", "@hotmail.com"];
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const navigate = useNavigate();
-  const [googleSignInUrl, setGoogleSignInUrl] = useState('');
 
-  // Function to handle the button click and redirect to Google OAuth URL
+  const navigate = useNavigate();
+  const commonDomains = ["@gmail.com", "@yahoo.com", "@outlook.com", "@hotmail.com"];
+
+  // Function to handle Google sign-in button click
   const handleGoogleSignIn = async () => {
     try {
-      // Make an API request to your backend to get the Google sign-in URL
-      const response = await fetch('http://127.0.0.1:8000/api/google');
+      // Make an API request to retrieve the Google sign-in URL
+      const response = await fetch('http://127.0.0.1:8000/api/auth/google');
       const data = await response.json();
 
       if (data.url) {
-        // Redirect the user to the Google sign-in page
-        window.location.href = data.url;
+        window.location.href = data.url; // Redirect to the Google sign-in page
       } else {
-        console.error('Error: No URL returned');
+        console.error('Error: No URL returned from API.');
       }
     } catch (error) {
       console.error('Error during Google sign-in:', error);
     }
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!errors.email && !errors.password && email && password) {
       setLoading(true);
       try {
-        // Gửi yêu cầu đăng nhập đến API Laravel
+        // Send a login request to the Laravel API
         const response = await axios.post("http://localhost:8000/api/login", {
           email,
           password,
         });
 
-        // Xử lý phản hồi từ API
         if (response.data.success) {
-          localStorage.setItem('auth_token', response.data.token);
-          navigate('/home');
+          localStorage.setItem('auth_token', response.data.token); // Save token for future use
+          navigate('/home'); // Navigate to home page on success
         } else {
-          console.log("Đăng nhập thất bại:", response.data.message);
           setErrors({ ...errors, form: response.data.message });
+          console.log("Login failed:", response.data.message);
         }
       } catch (error) {
-        console.error("Lỗi khi đăng nhập:", error.response?.data || error);
-        setErrors({ ...errors, form: "Đăng nhập không thành công. Vui lòng thử lại." });
+        console.error("Login error:", error.response?.data || error);
+        setErrors({ ...errors, form: "Login failed. Please try again." });
       } finally {
-        await new Promise(resolve => setTimeout(resolve, 2000));
         setLoading(false);
       }
     }
@@ -73,12 +69,13 @@ const LoginPage = () => {
             HKDN Chat
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Vui lòng đăng nhập để tiếp tục
+            Please log in to continue
           </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit} method="POST">
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md -space-y-px">
+            {/* Email Input */}
             <div className="relative mb-4">
               <label htmlFor="email" className="sr-only">Email address</label>
               <input
@@ -87,7 +84,7 @@ const LoginPage = () => {
                 type="email"
                 autoComplete="email"
                 required
-                className={`appearance-none rounded-lg relative block w-full px-3 py-2 border ${errors.email ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm transition-all duration-200`}
+                className={`appearance-none rounded-lg relative block w-full px-3 py-2 border ${errors.email ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
                 placeholder="Email address"
                 value={email}
                 onChange={(e) => handleEmailChange(e, setEmail, setShowSuggestions, setErrors)}
@@ -113,6 +110,7 @@ const LoginPage = () => {
               )}
             </div>
 
+            {/* Password Input */}
             <div className="relative mb-4">
               <label htmlFor="password" className="sr-only">Password</label>
               <input
@@ -121,7 +119,7 @@ const LoginPage = () => {
                 type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
                 required
-                className={`appearance-none rounded-lg relative block w-full px-3 py-2 border ${errors.password ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm transition-all duration-200`}
+                className={`appearance-none rounded-lg relative block w-full px-3 py-2 border ${errors.password ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
                 placeholder="Password"
                 value={password}
                 onChange={(e) => handlePasswordChange(e, setPassword, setErrors)}
@@ -144,26 +142,24 @@ const LoginPage = () => {
 
           <div className="flex items-center justify-between">
             <div className="text-sm">
-              <Link to="/forget" className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors duration-200">
-                Quên mật khẩu?
+              <Link to="/forget" className="font-medium text-indigo-600 hover:text-indigo-500">
+                Forgot password?
               </Link>
             </div>
           </div>
 
+          {/* Submit Button */}
           <div>
             <button
               type="submit"
               disabled={loading || errors.email || errors.password}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
-              {loading ? (
-                <BiLoaderAlt className="animate-spin h-5 w-5" />
-              ) : (
-                "Sign in"
-              )}
+              {loading ? <BiLoaderAlt className="animate-spin h-5 w-5" /> : "Sign in"}
             </button>
           </div>
 
+          {/* Alternative Sign-In Options */}
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -178,19 +174,19 @@ const LoginPage = () => {
               <button
                 type="button"
                 onClick={handleGoogleSignIn}
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition-all duration-200"
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
               >
                 <FaGoogle className="h-5 w-5 text-red-500" />
               </button>
               <button
                 type="button"
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition-all duration-200"
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
               >
                 <FaGithub className="h-5 w-5 text-gray-900" />
               </button>
               <button
                 type="button"
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition-all duration-200"
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
               >
                 <FaMicrosoft className="h-5 w-5 text-blue-500" />
               </button>
@@ -199,9 +195,9 @@ const LoginPage = () => {
         </form>
 
         <p className="mt-8 text-center text-sm text-gray-600">
-          Bạn không có tài khoản?{" "}
+          Don't have an account?{" "}
           <Link to="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
-            Đăng ký ngay
+            Sign up now
           </Link>
         </p>
       </div>

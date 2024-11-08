@@ -2,47 +2,47 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Laravel\Socialite\Facades\Socialite;
 use Exception;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Laravel\Socialite\Facades\Socialite;
+
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class GoogleController extends Controller
 {
-    public function getGoogleSignInUrl()
+    public function redirectToGoogle()
     {
-        try {
-            $url = Socialite::driver('google')->redirect()->getTargetUrl();
-            return response()->json(['url' => $url], 200);
-        } catch (Exception $exception) {
-            return response()->json(['error' => $exception->getMessage()], 500);
-        }
+        return Socialite::driver('google')->redirect();
     }
 
-    public function loginCallback(Request $request)
+    public function handleGoogleCallback()
     {
         try {
-            $state = $request->input('state');
+            $googleUser = Socialite::driver('google')->user();
 
-            parse_str($state, $result);
-            $googleUser = Socialite::driver('google')->user(); 
+            $user = User::firstOrCreate(
+                ['email' => $googleUser->getEmail()],
+                [
+                    'username' => $googleUser->getName(),
+                    'password' => Hash::make(Str::random(24)) // Đặt mật khẩu ngẫu nhiên cho tài khoản
+                ]
+            );
 
+            $token = $user->createToken('login_token')->plainTextToken;
 
-            $user = User::where('email', $googleUser->email)->first(); 
-
-            if (!$user) {
-                $user = User::create([
-                    'email' => $googleUser->email,
-                    'username' => $googleUser->username,
-                    'google_id' => $googleUser->id,
-                    'password' => '123456789abC', // Consider using a stronger password hashing mechanism
-                ]);
-            }
-
-            Auth::login($user); // Log the user in
-            return response()->json(['message' => 'Login successful'], 200);
-        } catch (Exception $exception) {
-            return response()->json(['error' => $exception->getMessage()], 500);
+            return response()->json([
+                'success' => true,
+                'message' => 'Login successful',
+                'access_token' => $token,
+                'token_type' => 'Bearer'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Authentication failed'
+            ]);
         }
     }
 }

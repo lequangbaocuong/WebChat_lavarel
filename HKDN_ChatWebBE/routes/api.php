@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\ForgotPasswordController;
+use App\Http\Controllers\RoomController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -27,6 +28,15 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-// Google Sign In
-Route::post('/get-google-sign-in-url', [GoogleController::class, 'getGoogleSignInUrl']);
-Route::get('/callback', [GoogleController::class, 'loginCallback']);
+Route::middleware(['web'])->group(function () {
+    Route::get('auth/google', [GoogleController::class, 'redirectToGoogle']);
+    Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
+});
+
+
+Route::post('/createroom', [RoomController::class, 'create']);
+Route::post('/joinroom', [RoomController::class, 'joinroom']);
+Route::post('/leave', [RoomController::class, 'leaveRoom']);
+
+Route::middleware('auth:sanctum')->post('/remove-user-from-room', [RoomController::class, 'removeUserFromRoom']);
+
