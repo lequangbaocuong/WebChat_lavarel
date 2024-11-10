@@ -30,6 +30,7 @@ const LoginPage = () => {
 
         // Xử lý phản hồi từ API
         if (response.data.success) {
+          alert("Đăng nhập thành công");
           localStorage.setItem('auth_token', response.data.token);
           navigate('/home');
         } else {
