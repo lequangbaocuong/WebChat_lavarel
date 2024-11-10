@@ -23,6 +23,16 @@ const SignUpPage = () => {
 
   const handleShowPassword = () => setShowPassword(!showPassword);
 
+
+  const Message = {
+    ULR: "login",
+    ULR2: "",
+    mes1: "Đăng ký thành công",
+    mes2: "Vui lòng đăng nhập để tiếp tục",
+    btleft: "Trở lại",
+    btright: "Đăng nhập ngay"
+  };
+
   // Email validation function
   const validateEmail = (email) => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -81,7 +91,7 @@ const SignUpPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 flex items-center justify-center">
       {showSuccessMessage ? (
-        <RegistrationSuccess />
+        <RegistrationSuccess {...Message} />
       ) : (
         <div className="max-w-md w-full bg-white p-8 rounded-xl shadow-2xl">
           <h2 className="text-center text-3xl font-extrabold text-gray-900">
