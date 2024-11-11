@@ -40,7 +40,6 @@ class AuthController extends Controller
             'access_token' => $token,
             'token_type' => 'Bearer',
             'redirect' => '/login',
-            'email' => $user->email // Include email in the response
         ]);
     }
 
@@ -67,7 +66,8 @@ class AuthController extends Controller
             'success' => true,
             'message' => 'Login successful',
             'access_token' => $token,
-            'token_type' => 'Bearer'
+            'token_type' => 'Bearer',
+            'email' => $user->email // Include email in the response
         ]);
     }
 

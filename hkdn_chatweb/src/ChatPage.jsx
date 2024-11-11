@@ -1,78 +1,68 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { BsThreeDotsVertical, BsHeart, BsHeartFill, BsCheckAll, BsCheck2 } from "react-icons/bs";
 import { IoSendSharp } from "react-icons/io5";
 import { RiGroupLine } from "react-icons/ri";
-
-const mockGroups = [
-    {
-        id: 1,
-        name: "Design Team",
-        description: "Team discussions about ongoing design projects",
-        avatar: "images.unsplash.com/photo-1522071820081-009f0129c71c",
-        lastMessage: "Hey everyone",
-        unreadCount: 3
-    },
-    {
-        id: 2,
-        name: "Development Squad",
-        description: "Technical discussions and code reviews",
-        avatar: "images.unsplash.com/photo-1522202176988-66273c2fd55f",
-        lastMessage: "PR is ready for review",
-        unreadCount: 1
-    }
-];
-
-const mockMessages = [
-    {
-        id: 1,
-        sender: {
-            id: 1,
-            name: "John Doe",
-            avatar: "images.unsplash.com/photo-1472099645785-5658abf4ff4e"
-        },
-        content: "Hello everyone! How's the progress going?",
-        timestamp: "10:30 AM",
-        status: "seen",
-        likes: 2,
-        seenBy: ["Alice", "Bob", "Charlie"],
-        isLiked: false
-    },
-    {
-        id: 2,
-        sender: {
-            id: 2,
-            name: "Jane Smith",
-            avatar: "images.unsplash.com/photo-1438761681033-6461ffad8d80"
-        },
-        content: "Making great progress on the dashboard redesign!",
-        timestamp: "10:32 AM",
-        status: "sent",
-        likes: 3,
-        seenBy: ["Alice"],
-        isLiked: true
-    }
-];
+import axios from "axios";
 
 const GroupChat = () => {
-    const [messages, setMessages] = useState(mockMessages);
-    const [groups, setGroups] = useState(mockGroups);
+    const [messages, setMessages] = useState([]);
+    const [groups, setGroups] = useState([]);
     const [selectedGroup, setSelectedGroup] = useState(null);
     const [showNewGroupModal, setShowNewGroupModal] = useState(false);
     const [newGroupData, setNewGroupData] = useState({ name: "", description: "" });
+    const [error, setError] = useState("");
     const [isTyping, setIsTyping] = useState(false);
     const [messageInput, setMessageInput] = useState("");
 
+    useEffect(() => {
+        const token = localStorage.getItem("auth_token");
+        if (token) {
+            axios.get("http://localhost:8000/api/rooms", {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            })
+            .then(response => {
+                if (response.data.success) {
+                    setGroups(response.data.rooms);
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching rooms:", error);
+            });
+        }
+    }, []);
+
     const handleCreateGroup = () => {
-        const newGroup = {
-            id: groups.length + 1,
-            ...newGroupData,
-            avatar: "images.unsplash.com/photo-1517245386807-bb43f82c33c4",
-            lastMessage: "",
-            unreadCount: 0
-        };
-        setGroups([...groups, newGroup]);
-        setShowNewGroupModal(false);
-        setNewGroupData({ name: "", description: "" });
+        const token = localStorage.getItem("auth_token");
+        const email = localStorage.getItem("user_email");
+        if (!newGroupData.name.trim()) {
+            setError("Group name is required.");
+            return;
+        }
+
+        if (token && email) {
+            axios.post("http://localhost:8000/api/createroom", {
+                name: newGroupData.name,
+                email: email
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+            .then(response => {
+                if (response.data.success) {
+                    setGroups([...groups, response.data.room]);
+                    setShowNewGroupModal(false);
+                    setNewGroupData({ name: "", description: "" });
+                    setError("");
+                } else {
+                    setError(response.data.message);
+                }
+            })
+            .catch(error => {
+                console.error("Error creating room:", error.response?.data || error);
+                setError("Failed to create group. Please try again.");
+            });
+        }
     };
 
     const handleLikeMessage = (messageId) => {
@@ -90,19 +80,18 @@ const GroupChat = () => {
 
     return (
         <div className="flex h-screen bg-gray-100">
-            {/* Left Sidebar - Group List */}
-            <div className="w-1/4 bg-white border-r border-gray-200 p-4">
+            {/* Sidebar - Group List */}
+            <aside className="w-full md:w-1/4 bg-white border-r p-4">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold">Groups</h2>
+                    <h2 className="text-lg font-bold">Groups</h2>
                     <button
                         onClick={() => setShowNewGroupModal(true)}
-                        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+                        className="bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition-colors"
                     >
                         New Group
                     </button>
                 </div>
-
-                <div className="space-y-4">
+                <div className="space-y-4 overflow-auto h-[calc(100vh-150px)]">
                     {groups.map(group => (
                         <div
                             key={group.id}
@@ -112,11 +101,11 @@ const GroupChat = () => {
                             <img
                                 src={`https://${group.avatar}`}
                                 alt={group.name}
-                                className="w-12 h-12 rounded-full object-cover"
+                                className="w-10 h-10 rounded-full object-cover"
                             />
                             <div className="flex-1">
                                 <h3 className="font-semibold">{group.name}</h3>
-                                <p className="text-sm text-gray-500 truncate">{group.lastMessage}</p>
+                                <p className="text-xs text-gray-500 truncate">{group.lastMessage}</p>
                             </div>
                             {group.unreadCount > 0 && (
                                 <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
@@ -126,14 +115,14 @@ const GroupChat = () => {
                         </div>
                     ))}
                 </div>
-            </div>
+            </aside>
 
             {/* Main Chat Area */}
-            <div className="flex-1 flex flex-col">
+            <main className="flex-1 flex flex-col">
                 {selectedGroup ? (
                     <>
                         {/* Chat Header */}
-                        <div className="bg-white border-b border-gray-200 p-4">
+                        <header className="bg-white border-b p-4">
                             <div className="flex items-center space-x-3">
                                 <img
                                     src={`https://${selectedGroup.avatar}`}
@@ -141,14 +130,14 @@ const GroupChat = () => {
                                     className="w-10 h-10 rounded-full object-cover"
                                 />
                                 <div>
-                                    <h2 className="font-bold">{selectedGroup.name}</h2>
+                                    <h2 className="font-semibold">{selectedGroup.name}</h2>
                                     <p className="text-sm text-gray-500">{selectedGroup.description}</p>
                                 </div>
                             </div>
-                        </div>
+                        </header>
 
                         {/* Messages Area */}
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
                             {messages.map(message => (
                                 <div key={message.id} className="flex items-start space-x-3">
                                     <img
@@ -156,74 +145,54 @@ const GroupChat = () => {
                                         alt={message.sender.name}
                                         className="w-8 h-8 rounded-full object-cover"
                                     />
-                                    <div className="flex-1">
+                                    <div className="flex-1 bg-white p-3 rounded-lg shadow-sm">
                                         <div className="flex items-center space-x-2">
                                             <span className="font-semibold">{message.sender.name}</span>
                                             <span className="text-xs text-gray-500">{message.timestamp}</span>
                                         </div>
-                                        <div className="mt-1 bg-white p-3 rounded-lg shadow-sm">
-                                            <p>{message.content}</p>
-                                            <div className="mt-2 flex items-center space-x-4 text-sm text-gray-500">
-                                                <button
-                                                    onClick={() => handleLikeMessage(message.id)}
-                                                    className="flex items-center space-x-1"
-                                                >
-                                                    {message.isLiked ? (
-                                                        <BsHeartFill className="text-red-500" />
-                                                    ) : (
-                                                        <BsHeart />
-                                                    )}
-                                                    <span>{message.likes}</span>
-                                                </button>
-                                                <div className="flex items-center space-x-1">
-                                                    {message.status === "seen" ? (
-                                                        <BsCheckAll className="text-blue-500" />
-                                                    ) : (
-                                                        <BsCheck2 />
-                                                    )}
-                                                    <span>{message.status}</span>
-                                                </div>
-                                                <div className="relative group">
-                                                    <BsThreeDotsVertical className="cursor-pointer" />
-                                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg hidden group-hover:block">
-                                                        <div className="py-1">
-                                                            <button className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">Edit</button>
-                                                            <button className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">Delete</button>
-                                                            <button className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">Reply</button>
-                                                            <button className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">Forward</button>
-                                                        </div>
+                                        <p className="mt-1">{message.content}</p>
+                                        <div className="mt-2 flex items-center space-x-4 text-sm text-gray-500">
+                                            <button onClick={() => handleLikeMessage(message.id)} className="flex items-center space-x-1">
+                                                {message.isLiked ? <BsHeartFill className="text-red-500" /> : <BsHeart />}
+                                                <span>{message.likes}</span>
+                                            </button>
+                                            <div className="flex items-center space-x-1">
+                                                {message.status === "seen" ? <BsCheckAll className="text-blue-500" /> : <BsCheck2 />}
+                                                <span>{message.status}</span>
+                                            </div>
+                                            <div className="relative group">
+                                                <BsThreeDotsVertical className="cursor-pointer" />
+                                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg hidden group-hover:block">
+                                                    <div className="py-1">
+                                                        <button className="block px-4 py-2 text-sm hover:bg-gray-100 w-full text-left">Edit</button>
+                                                        <button className="block px-4 py-2 text-sm hover:bg-gray-100 w-full text-left">Delete</button>
+                                                        <button className="block px-4 py-2 text-sm hover:bg-gray-100 w-full text-left">Reply</button>
+                                                        <button className="block px-4 py-2 text-sm hover:bg-gray-100 w-full text-left">Forward</button>
                                                     </div>
                                                 </div>
                                             </div>
-                                            {message.seenBy.length > 0 && (
-                                                <div className="mt-2 text-xs text-gray-500">
-                                                    Seen by {message.seenBy.join(", ")}
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
                                 </div>
                             ))}
-                            {isTyping && (
-                                <div className="text-sm text-gray-500 italic">Someone is typing...</div>
-                            )}
+                            {isTyping && <p className="text-sm text-gray-500 italic">Someone is typing...</p>}
                         </div>
 
                         {/* Message Input */}
-                        <div className="bg-white border-t border-gray-200 p-4">
+                        <footer className="bg-white border-t p-4">
                             <div className="flex items-center space-x-3">
                                 <input
                                     type="text"
                                     value={messageInput}
                                     onChange={(e) => setMessageInput(e.target.value)}
                                     placeholder="Type your message..."
-                                    className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+                                    className="flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
-                                <button className="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600">
+                                <button className="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors">
                                     <IoSendSharp size={20} />
                                 </button>
                             </div>
-                        </div>
+                        </footer>
                     </>
                 ) : (
                     <div className="flex-1 flex items-center justify-center">
@@ -233,38 +202,41 @@ const GroupChat = () => {
                         </div>
                     </div>
                 )}
-            </div>
+            </main>
 
             {/* New Group Modal */}
             {showNewGroupModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                    <div className="bg-white rounded-lg p-6 w-96">
-                        <h2 className="text-xl font-bold mb-4">Create New Group</h2>
-                        <input
-                            type="text"
-                            placeholder="Group Name"
-                            value={newGroupData.name}
-                            onChange={(e) => setNewGroupData({ ...newGroupData, name: e.target.value })}
-                            className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-4"
-                        />
-                        <textarea
-                            placeholder="Group Description"
-                            value={newGroupData.description}
-                            onChange={(e) => setNewGroupData({ ...newGroupData, description: e.target.value })}
-                            className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-4"
-                        />
-                        <div className="flex justify-end space-x-3">
+                <div className="fixed inset-0 bg-gray-700 bg-opacity-75 flex items-center justify-center z-50">
+                    <div className="bg-white p-8 rounded-lg w-96 shadow-lg">
+                        <h3 className="text-lg font-semibold mb-4">Create New Group</h3>
+                        {error && <p className="text-red-500 mb-2">{error}</p>}
+                        <div className="space-y-4">
+                            <input
+                                type="text"
+                                value={newGroupData.name}
+                                onChange={(e) => setNewGroupData({ ...newGroupData, name: e.target.value })}
+                                placeholder="Group name"
+                                className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <textarea
+                                value={newGroupData.description}
+                                onChange={(e) => setNewGroupData({ ...newGroupData, description: e.target.value })}
+                                placeholder="Description (optional)"
+                                className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            ></textarea>
+                        </div>
+                        <div className="flex justify-end mt-6 space-x-4">
                             <button
                                 onClick={() => setShowNewGroupModal(false)}
-                                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                                className="text-gray-500 hover:text-gray-700 transition-colors"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleCreateGroup}
-                                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+                                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                             >
-                                Create Group
+                                Create
                             </button>
                         </div>
                     </div>
