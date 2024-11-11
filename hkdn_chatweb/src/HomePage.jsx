@@ -1,26 +1,30 @@
 import React, { useState, useEffect, useRef } from "react";
 import { IoMdSend } from "react-icons/io";
 import { FiPaperclip, FiSmile } from "react-icons/fi";
-import { BsCheck2All, BsThreeDotsVertical, BsSearch } from "react-icons/bs";
-import { AiOutlineUserAdd, AiOutlineGroup } from "react-icons/ai";
+import { BsChatDotsFill, BsPeopleFill, BsGearFill, BsArchiveFill, BsListTask, BsThreeDotsVertical, BsSearch } from "react-icons/bs";
+import { AiOutlineUserAdd, AiOutlineUsergroupAdd } from "react-icons/ai";
+import { FaCheck, FaExclamationCircle } from "react-icons/fa";
+import IntroPage from "./IntroPage";
+import Profile from "./Profile";
 
 const HomePage = () => {
   const [selectedChat, setSelectedChat] = useState(null);
   const [message, setMessage] = useState("");
-  const [showSidebarMenu, setShowSidebarMenu] = useState(false);
+  const [showAvatarMenu, setShowAvatarMenu] = useState(false);
   const [showChatMenu, setShowChatMenu] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showProfilePage, setShowProfilePage] = useState(false);
   const [profileData, setProfileData] = useState(null); 
-  const sidebarMenuRef = useRef(null);
   const chatMenuRef = useRef(null);
-
-
+  const [searchQuery, setSearchQuery] = useState("");
+  const avatarMenuRef = useRef(null);
+  
   const currentUser = {
     id: 0,
     name: "You",
     birthDate: "01/01/2000",
     phoneNumber: "+84 123 456 789",
-    avatar: "",
+    avatar: "https://inkythuatso.com/uploads/thumbnails/800/2023/03/6-anh-dai-dien-trang-inkythuatso-03-15-26-36.jpg",
   };
 
   const contacts = [
@@ -45,7 +49,7 @@ const HomePage = () => {
     {
       id: 3,
       name: "Thái",
-      status: "away",
+      status: "online",
       avatar: "https://inkythuatso.com/uploads/thumbnails/800/2023/03/6-anh-dai-dien-trang-inkythuatso-03-15-26-36.jpg",
       lastMessage: "Hi",
       time: "Yesterday",
@@ -68,6 +72,21 @@ const HomePage = () => {
       time: "10:31 AM",
       status: "read",
       type: "sent",
+      readBy: [
+        {
+          id: 1,
+          avatar: "https://inkythuatso.com/uploads/thumbnails/800/2023/03/6-anh-dai-dien-trang-inkythuatso-03-15-26-36.jpg",
+        },
+      ],
+    },
+    {
+      id: 3,
+      sender: "You",
+      content: "Hello!",
+      time: "10:32 AM",
+      status: "failed",
+      type: "sent",
+      readBy: [],
     },
   ];
 
@@ -83,38 +102,42 @@ const HomePage = () => {
       handleSendMessage();
     }
   };
-
-  const handleProfileClick = () => {
-    setProfileData(currentUser); // Show current user profile from sidebar
-    setShowProfileModal(true);
-    setShowSidebarMenu(false);
-  };
+  const filteredContacts = contacts.filter((contact) =>
+    contact.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const handleContactProfileClick = () => {
     setProfileData(selectedChat); // Show selected contact profile from chat
     setShowProfileModal(true);
-    setShowChatMenu(false);
   };
 
   const closeProfileModal = () => {
     setShowProfileModal(false);
   };
 
-  const toggleSidebarMenu = () => {
-    setShowSidebarMenu((prev) => !prev);
-  };
-
   const toggleChatMenu = () => {
     setShowChatMenu((prev) => !prev);
+  };
+  
+  const handleViewProfile = () => {
+    console.log(showProfilePage);
+    setShowProfilePage(true);
+    setShowAvatarMenu(false);
+  };
+  
+  const closeProfilePage = () => {
+    setShowProfilePage(false);
+  };
+
+  const toggleAvatarMenu = (e) => {
+    e.stopPropagation();
+    setShowAvatarMenu((prev) => !prev);
   };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (sidebarMenuRef.current && !sidebarMenuRef.current.contains(event.target)) {
-        setShowSidebarMenu(false);
-      }
-      if (chatMenuRef.current && !chatMenuRef.current.contains(event.target)) {
-        setShowChatMenu(false);
+      if (avatarMenuRef.current && !avatarMenuRef.current.contains(event.target)) {
+        setShowAvatarMenu(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -124,8 +147,60 @@ const HomePage = () => {
   }, []);
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-full">
       {/* Sidebar */}
+      <div className="w-16 h-screen bg-blue-600 flex flex-col items-center py-4">
+        {/* Avatar and Menu */}
+        <div className="relative">
+          <img
+            src={currentUser.avatar || "https://via.placeholder.com/150"}
+            alt="Avatar"
+            className="w-10 h-10 rounded-full object-cover cursor-pointer mb-4"
+            onClick={toggleAvatarMenu}
+          />
+          {showAvatarMenu && (
+            <div className="absolute top-12 left-0 w-48 bg-white shadow-lg rounded-lg z-10">
+              <div className="p-4 border-b">
+                <h2 className="font-semibold">{currentUser.name}</h2>
+              </div>
+              <ul className="p-2">
+                <li className="p-2 hover:bg-gray-100 cursor-pointer" onClick={handleViewProfile}>
+                  Hồ sơ của bạn
+                </li>
+                <li className="p-2 hover:bg-gray-100 cursor-pointer">Cài đặt</li>
+                <li className="p-2 hover:bg-gray-100 cursor-pointer text-red-500">Đăng xuất</li>
+              </ul>
+            </div>
+          )}
+        </div>
+        {/* Icon Tin nhắn */}
+        <button title="Tin nhắn" className="text-white hover:bg-blue-500 p-3 rounded-lg mb-2">
+          <BsChatDotsFill size={24} />
+        </button>
+
+        {/* Icon Danh bạ */}
+        <button title="Danh bạ" className="text-white hover:bg-blue-500 p-3 rounded-lg mb-2">
+          <BsPeopleFill size={24} />
+        </button>
+
+        {/* Đường kẻ ngang */}
+        <div className="w-10 h-px bg-white my-4"></div>
+
+        {/* Icon Lưu trữ */}
+        <button title="Lưu trữ" className="text-white hover:bg-blue-500 p-3 rounded-lg mb-2">
+          <BsArchiveFill size={24} />
+        </button>
+
+        {/* Icon Công việc */}
+        <button title="Công việc" className="text-white hover:bg-blue-500 p-3 rounded-lg mb-2">
+          <BsListTask size={24} />
+        </button>
+
+        {/* Icon Cài đặt */}
+        <button title="Cài đặt" className="text-white hover:bg-blue-500 p-3 rounded-lg">
+          <BsGearFill size={24} />
+        </button>
+      </div>
       <div className="w-1/4 bg-white border-r border-gray-200 relative">
         <div className="p-4 border-b border-gray-200 mb-2">
           <div className="flex items-center justify-between mb-4">
@@ -135,30 +210,15 @@ const HomePage = () => {
                 <AiOutlineUserAdd className="text-gray-600 hover:text-blue-500" />
               </button>
               <button title="Tạo nhóm">
-                <AiOutlineGroup className="text-gray-600 hover:text-blue-500" />
+                <AiOutlineUsergroupAdd className="text-gray-600 hover:text-blue-500" />
               </button>
-              <BsThreeDotsVertical
-                className="text-gray-600 cursor-pointer"
-                onClick={toggleSidebarMenu}
-              />
-              {showSidebarMenu && (
-                <div
-                  ref={sidebarMenuRef}
-                  className="absolute top-16 right-0 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-10"
-                >
-                  <ul className="p-2">
-                    <li className="p-2 hover:bg-gray-100 cursor-pointer" onClick={handleProfileClick}>Profile</li>
-                    <li className="p-2 hover:bg-gray-100 cursor-pointer">Friends</li>
-                    <li className="p-2 hover:bg-gray-100 cursor-pointer">Settings</li>
-                    <li className="p-2 hover:bg-gray-100 cursor-pointer">Log out</li>
-                  </ul>
-                </div>
-              )}
             </div>
           </div>
           <div className="relative">
             <input
               type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm kiếm"
               className="w-full px-4 py-2 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -166,7 +226,7 @@ const HomePage = () => {
           </div>
         </div>
         <div className="overflow-y-auto h-[calc(100vh-180px)]">
-          {contacts.map((contact) => (
+          {filteredContacts.map((contact) => (
             <div
               key={contact.id}
               onClick={() => setSelectedChat(contact)}
@@ -184,8 +244,6 @@ const HomePage = () => {
                   className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
                     contact.status === "online"
                       ? "bg-green-500"
-                      : contact.status === "away"
-                      ? "bg-yellow-500"
                       : "bg-gray-500"
                   }`}
                 ></span>
@@ -202,7 +260,10 @@ const HomePage = () => {
 
       {/* Main Chat */}
       <div className="flex-1 flex flex-col">
-        {selectedChat ? (
+        {/* Show Profile Component */}
+        {showProfilePage ? (
+          <Profile closeProfile={closeProfilePage} />
+        ) : selectedChat ? (
           <>
             <div className="p-4 bg-white border-b border-gray-200 flex items-center justify-between relative">
               <div className="flex items-center">
@@ -237,34 +298,43 @@ const HomePage = () => {
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4">
-              {messages.map((msg) => (
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex ${msg.type === "sent" ? "justify-end" : "justify-start"} mb-4`}
+              >
                 <div
-                  key={msg.id}
-                  className={`flex ${
-                    msg.type === "sent" ? "justify-end" : "justify-start"
-                  } mb-4`}
+                  className={`p-3 rounded-lg max-w-xs ${
+                    msg.type === "sent" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-900"
+                  }`}
                 >
-                  <div
-                    className={`p-3 rounded-lg max-w-xs ${
-                      msg.type === "sent"
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-200 text-gray-900"
-                    }`}
-                  >
-                    <p>{msg.content}</p>
-                    <div className="text-xs text-white-500 mt-1 flex items-center">
-                      {msg.time}
-                      {msg.type === "sent" && (
-                        <BsCheck2All
-                          className={`ml-1 ${
-                            msg.status === "read" ? "text-whitee-400" : "text-gray-400"
-                          }`}
-                        />
-                      )}
-                    </div>
+                  <p>{msg.content}</p>
+                  <div className="text-xs text-white-500 mt-1 flex items-center">
+                    {msg.time}  
+                    {msg.type === "sent" && (
+                      <div className="ml-2 flex items-center">
+                        {msg.status === "sending" && <span>Đang gửi...</span>}
+                        {msg.status === "sent" && <FaCheck className="text-white ml-1" />}
+                        {msg.status === "delivered" && <FaCheck className="text-white ml-1" />}
+                        {msg.status === "read" && (
+                          <div className="flex items-center ml-1">
+                            {msg.readBy.map((user) => (
+                              <img
+                                key={user.id}
+                                src={user.avatar}
+                                alt="User avatar"
+                                className="w-5 h-5 rounded-full border-2 border-white ml-1"
+                              />
+                            ))}
+                          </div>
+                        )}
+                        {msg.status === "failed" && <FaExclamationCircle className="text-red-500 ml-1" />}
+                      </div>
+                    )}
                   </div>
                 </div>
-              ))}
+              </div>
+            ))}
             </div>
 
             <div className="p-4 bg-white border-t border-gray-200 flex items-center">
@@ -284,9 +354,7 @@ const HomePage = () => {
             </div>
           </>
         ) : (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-gray-500">Select a chat to start messaging</p>
-          </div>
+          <IntroPage />
         )}
       </div>
 
