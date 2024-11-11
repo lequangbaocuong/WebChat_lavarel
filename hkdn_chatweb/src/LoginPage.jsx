@@ -2,6 +2,10 @@ import React, { useState } from "react";
 import { FaEye, FaEyeSlash, FaGoogle, FaGithub, FaMicrosoft } from "react-icons/fa";
 import { BiLoaderAlt } from "react-icons/bi";
 import './styles/tailwind.css';
+import { Link } from 'react-router-dom';
+import { handleEmailChange, handlePasswordChange, selectDomain } from './utils/validators';
+import axios from "axios";
+import { useNavigate } from 'react-router-dom';
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -12,45 +16,35 @@ const LoginPage = () => {
 
   const commonDomains = ["@gmail.com", "@yahoo.com", "@outlook.com", "@hotmail.com"];
   const [showSuggestions, setShowSuggestions] = useState(false);
-
-  const validateEmail = (email) => {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
-  };
-
-  const handleEmailChange = (e) => {
-    const value = e.target.value;
-    setEmail(value);
-    setShowSuggestions(!value.includes("@") && value.length > 0);
-    setErrors(prev => ({
-      ...prev,
-      email: validateEmail(value) ? "" : "Invalid email format"
-    }));
-  };
-
-  const handlePasswordChange = (e) => {
-    const value = e.target.value;
-    setPassword(value);
-    setErrors(prev => ({
-      ...prev,
-      password: value.length >= 8 ? "" : "Password must be at least 8 characters"
-    }));
-  };
-
+  const navigate = useNavigate();
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!errors.email && !errors.password && email && password) {
       setLoading(true);
-      // Simulating API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setLoading(false);
-    }
-  };
+      try {
+        // Gửi yêu cầu đăng nhập đến API Laravel
+        const response = await axios.post("http://localhost:8000/api/login", {
+          email,
+          password,
+        });
 
-  const selectDomain = (domain) => {
-    setEmail(email.split("@")[0] + domain);
-    setShowSuggestions(false);
-    setErrors(prev => ({ ...prev, email: "" }));
+        // Xử lý phản hồi từ API
+        if (response.data.success) {
+          alert("Đăng nhập thành công");
+          localStorage.setItem('auth_token', response.data.token);
+          navigate('/home');
+        } else {
+          console.log("Đăng nhập thất bại:", response.data.message);
+          setErrors({ ...errors, form: response.data.message });
+        }
+      } catch (error) {
+        console.error("Lỗi khi đăng nhập:", error.response?.data || error);
+        setErrors({ ...errors, form: "Đăng nhập không thành công. Vui lòng thử lại." });
+      } finally {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        setLoading(false);
+      }
+    }
   };
 
   return (
@@ -58,14 +52,14 @@ const LoginPage = () => {
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-2xl transform transition-all hover:scale-[1.01]">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Welcome back
+            HKDN Chat
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Please sign in to continue
+            Vui lòng đăng nhập để tiếp tục
           </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit} method="POST">
           <div className="rounded-md -space-y-px">
             <div className="relative mb-4">
               <label htmlFor="email" className="sr-only">Email address</label>
@@ -78,7 +72,7 @@ const LoginPage = () => {
                 className={`appearance-none rounded-lg relative block w-full px-3 py-2 border ${errors.email ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm transition-all duration-200`}
                 placeholder="Email address"
                 value={email}
-                onChange={handleEmailChange}
+                onChange={(e) => handleEmailChange(e, setEmail, setShowSuggestions, setErrors)}
                 aria-invalid={errors.email ? "true" : "false"}
                 aria-describedby="email-error"
               />
@@ -89,7 +83,7 @@ const LoginPage = () => {
                       key={domain}
                       type="button"
                       className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
-                      onClick={() => selectDomain(domain)}
+                      onClick={() => selectDomain(email, domain, setEmail, setShowSuggestions, setErrors)}
                     >
                       {email.split("@")[0] + domain}
                     </button>
@@ -112,7 +106,7 @@ const LoginPage = () => {
                 className={`appearance-none rounded-lg relative block w-full px-3 py-2 border ${errors.password ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm transition-all duration-200`}
                 placeholder="Password"
                 value={password}
-                onChange={handlePasswordChange}
+                onChange={(e) => handlePasswordChange(e, setPassword, setErrors)}
                 aria-invalid={errors.password ? "true" : "false"}
                 aria-describedby="password-error"
               />
@@ -132,9 +126,9 @@ const LoginPage = () => {
 
           <div className="flex items-center justify-between">
             <div className="text-sm">
-              <a href="#" className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors duration-200">
-                Forgot your password?
-              </a>
+              <Link to="/forget" className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors duration-200">
+                Quên mật khẩu?
+              </Link>
             </div>
           </div>
 
@@ -186,10 +180,10 @@ const LoginPage = () => {
         </form>
 
         <p className="mt-8 text-center text-sm text-gray-600">
-          Don't have an account?{" "}
-          <a href="#" className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors duration-200">
-            Sign up now
-          </a>
+          Bạn không có tài khoản?{" "}
+          <Link to="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
+            Đăng ký ngay
+          </Link>
         </p>
       </div>
     </div>
