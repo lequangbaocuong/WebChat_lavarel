@@ -8,6 +8,7 @@ use App\Models\RoomUser;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 use App\Http\Requests\User\EntryRoomRequest;
 use App\Http\Requests\User\LeaveRoomRequest;
 use App\Http\Requests\User\CreateRoomRequest;
@@ -15,6 +16,42 @@ use App\Http\Requests\User\DeleteUserRoomRequest;
 
 class RoomController extends Controller
 {
+    public function index(Request $request)
+    {
+        try {
+            // Check if user is authenticated
+            if (!Auth::check()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated',
+                ], 401);  // Unauthorized if not authenticated
+            }
+
+            $user = Auth::user(); // Now safe to call Auth::user()
+
+            // Get the rooms associated with the authenticated user
+            $rooms = Room::whereHas('users', function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            })->get();
+
+            if ($rooms->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No rooms found for this user.',
+                ], 404); // Not found if no rooms exist
+            }
+
+            return response()->json([
+                'success' => true,
+                'rooms' => $rooms,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
     public function create(CreateRoomRequest $request)
     {
    

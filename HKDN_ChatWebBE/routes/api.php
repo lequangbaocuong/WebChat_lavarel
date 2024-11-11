@@ -33,7 +33,7 @@ Route::middleware(['web'])->group(function () {
     Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
 });
 
-
+Route::middleware('auth:sanctum')->get('/rooms', [RoomController::class, 'index']);
 Route::post('/createroom', [RoomController::class, 'create']);
 Route::post('/joinroom', [RoomController::class, 'joinroom']);
 Route::post('/leave', [RoomController::class, 'leaveRoom']);

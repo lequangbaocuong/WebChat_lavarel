@@ -47,6 +47,7 @@ const LoginPage = () => {
 
         if (response.data.success) {
           localStorage.setItem('auth_token', response.data.token); // Save token for future use
+          localStorage.setItem('user_email', response.data.email); // Store the email
           navigate('/home'); // Navigate to home page on success
         } else {
           setErrors({ ...errors, form: response.data.message });

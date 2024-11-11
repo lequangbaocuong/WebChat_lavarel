@@ -54,4 +54,8 @@ class User extends Authenticatable
     {
         $this->notify(new ResetPasswordNotification($token));
     }
+    public function rooms()
+    {
+        return $this->belongsToMany(Room::class, 'table_room_users', 'user_id', 'room_id');
+    }
 }

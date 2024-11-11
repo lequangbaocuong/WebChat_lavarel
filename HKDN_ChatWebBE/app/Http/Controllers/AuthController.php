@@ -39,7 +39,8 @@ class AuthController extends Controller
             'message' => 'User registered successfully',
             'access_token' => $token,
             'token_type' => 'Bearer',
-            'redirect' => '/login'
+            'redirect' => '/login',
+            'email' => $user->email // Include email in the response
         ]);
     }
 
