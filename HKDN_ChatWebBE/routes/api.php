@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\ResetPasswordController;
+use App\Http\Controllers\HomepageController;
 use App\Http\Controllers\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -20,4 +21,5 @@ Route::post('/reset-password', ResetPasswordController::class);
 // Các route yêu cầu người dùng đăng nhập
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('./home',[HomepageController::class,'GetName']);
 });
