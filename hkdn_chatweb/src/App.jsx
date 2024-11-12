@@ -10,7 +10,7 @@ import ChatPage from './ChatPage';
 import ResetPassPage from './ResetPassPage';
 import VideoCallPage from './VideoCallPage';
 
-function App() {
+const App = () => {
     return (
         <Router>
             <Routes>
