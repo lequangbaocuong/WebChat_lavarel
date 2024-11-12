@@ -1,5 +1,4 @@
 <?php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -16,6 +15,8 @@ class CreateUsersTable extends Migration
             $table->timestamps();
             $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();
+            $table->string('otp', 6)->nullable()->default(null); // Thêm cột otp
+            $table->string('status')->default('active'); // Thêm cột status
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

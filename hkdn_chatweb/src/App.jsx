@@ -8,6 +8,7 @@ import ChatUI from './Component/ChatUI';
 import ChatPage from './ChatPage';
 import ResetPassPage from './ResetPassPage'
 import VideoCallPage from './VideoCallPage'
+import OTPInput from './OTPInput';
 const App = () => {
     return (
         <Router>
@@ -20,6 +21,7 @@ const App = () => {
                 <Route path="/test" element={<Navbar />} />
                 <Route path="/home" element={<ChatPage />} />
                 <Route path="/videocall" element={<VideoCallPage />} />
+                <Route path="/OTP" element={<OTPInput />} />
             </Routes>
         </Router>
     );

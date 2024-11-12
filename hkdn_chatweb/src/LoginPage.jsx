@@ -6,14 +6,14 @@ import { Link } from 'react-router-dom';
 import { handleEmailChange, handlePasswordChange, selectDomain } from './utils/validators';
 import axios from "axios";
 import { useNavigate } from 'react-router-dom';
-
+import NotificationPopup from './Component/NotificationPopup'
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({ email: "", password: "" });
-
+  const [showNotification, setShowNotification] = useState(false);
   const commonDomains = ["@gmail.com", "@yahoo.com", "@outlook.com", "@hotmail.com"];
   const [showSuggestions, setShowSuggestions] = useState(false);
   const navigate = useNavigate();
@@ -30,9 +30,12 @@ const LoginPage = () => {
 
         // Xử lý phản hồi từ API
         if (response.data.success) {
-          alert("Đăng nhập thành công");
-          localStorage.setItem('auth_token', response.data.token);
-          navigate('/home');
+
+          setShowNotification(true);
+          setTimeout(() => {
+            localStorage.setItem('auth_token', response.data.token);
+            navigate('/home');
+          }, 3000);
         } else {
           console.log("Đăng nhập thất bại:", response.data.message);
           setErrors({ ...errors, form: response.data.message });
@@ -186,6 +189,7 @@ const LoginPage = () => {
           </Link>
         </p>
       </div>
+      {showNotification && (<NotificationPopup />)}
     </div>
   );
 };

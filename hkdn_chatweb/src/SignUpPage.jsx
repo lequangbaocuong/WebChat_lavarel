@@ -72,8 +72,19 @@ const SignUpPage = () => {
 
         // Xử lý phản hồi từ API
         if (response.data.success) {
-          setShowSuccessMessage(true);
-          // navigate(response.data.redirect);
+
+          const verificationResponse = await axios.post("http://localhost:8000/api/send-verification-code", {
+            email
+          });
+
+          if (verificationResponse.data.success) {
+
+            localStorage.setItem("email", email);
+
+            navigate("/OTP");
+          }
+
+          //    setShowSuccessMessage(true);
         } else {
           console.log("Đăng ký thất bại:", response.data.message);
           setErrors({ ...errors, form: response.data.message });
