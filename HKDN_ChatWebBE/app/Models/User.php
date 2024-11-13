@@ -24,6 +24,7 @@ class User extends Authenticatable
         'username',
         'email',
         'password',
+        'email_verified_at', // Fillable since we will manually add it on Sign on
         'google_id',
     ];
 

@@ -1,7 +1,11 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Illuminate\Http\JsonResponse;
+use GuzzleHttp\Exception\ClientException;
+use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Support\Facades\Log;
+use Laravel\Socialite\Contracts\User as SocialiteUser;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -80,4 +84,38 @@ class AuthController extends Controller
             'message' => 'Logged out successfully'
         ]);
     }
+    public function redirectToAuth(): JsonResponse
+    {
+        return response()->json([
+            'url' => Socialite::driver('google')->redirect()->getTargetUrl(),
+        ]);
+    }
+    public function handleAuthCallback(): JsonResponse
+    {
+        try {
+            /** @var SocialiteUser $socialiteUser */
+            $socialiteUser = Socialite::driver('google')->redirect()->user();
+        } catch (ClientException $e) {
+            return response()->json(['error' => 'Invalid credentials provided.'], 422);
+        }
+
+        /** @var User $user */
+        $user = User::query()
+            ->firstOrCreate(
+                [
+                    'email' => $socialiteUser->getEmail(),
+                ],
+                [
+                    'email_verified_at' => now(),
+                    'name' => $socialiteUser->getName(),
+                    'google_id' => $socialiteUser->getId(),                ]
+            );
+
+        return response()->json([
+            'user' => $user,
+            'access_token' => $user->createToken('google-token')->plainTextToken,
+            'token_type' => 'Bearer',
+        ]);
+    }
+
 }

@@ -6,7 +6,7 @@ use Exception;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite;
-
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -14,35 +14,39 @@ class GoogleController extends Controller
 {
     public function redirectToGoogle()
     {
-        return Socialite::driver('google')->redirect();
+        // Redirect to Google's OAuth page
+        return response()->json(['url' => Socialite::driver('google')->redirect()->getTargetUrl()]);
     }
 
     public function handleGoogleCallback()
     {
         try {
+            // Get the user data from Google
             $googleUser = Socialite::driver('google')->user();
 
-            $user = User::firstOrCreate(
-                ['email' => $googleUser->getEmail()],
+            // Find or create the user in your database
+            $user = User::updateOrCreate(
+                ['google_id' => $googleUser->id],
                 [
-                    'username' => $googleUser->getName(),
-                    'password' => Hash::make(Str::random(24)) // Đặt mật khẩu ngẫu nhiên cho tài khoản
+                    'email' => $googleUser->email,
+                    'name' => $googleUser->name,
+                    'google_id' => $googleUser->id,
+                    'password' => encrypt('123456dummy') // Set a default password
                 ]
             );
 
-            $token = $user->createToken('login_token')->plainTextToken;
+            // Log the user in
+            Auth::login($user);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Login successful',
-                'access_token' => $token,
-                'token_type' => 'Bearer'
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Authentication failed'
-            ]);
+            // Redirect the user to the intended page
+            return redirect()->route('home'); // Or wherever you want to redirect
+
+        } catch (Exception $e) {
+            // Log the error for debugging
+            Log::error('Google callback error: ' . $e->getMessage());
+
+            // Handle the error gracefully and show a user-friendly message
+            return redirect()->route('api/login')->withErrors(['google_error' => 'An error occurred during the Google sign-in process.']);
         }
     }
 }

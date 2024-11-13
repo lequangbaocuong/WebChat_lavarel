@@ -16,22 +16,24 @@ const GroupChat = () => {
 
     useEffect(() => {
         const token = localStorage.getItem("auth_token");
+
         if (token) {
             axios.get("http://localhost:8000/api/rooms", {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: { Authorization: `Bearer ${token}` }
             })
             .then(response => {
                 if (response.data.success) {
                     setGroups(response.data.rooms);
+                } else {
+                    console.error("Error fetching rooms:", response.data.message);
                 }
             })
             .catch(error => {
-                console.error("Error fetching rooms:", error);
+                console.error("Failed to fetch rooms:", error.response?.data || error);
             });
         }
     }, []);
+
 
     const handleCreateGroup = () => {
         const token = localStorage.getItem("auth_token");
@@ -92,28 +94,33 @@ const GroupChat = () => {
                     </button>
                 </div>
                 <div className="space-y-4 overflow-auto h-[calc(100vh-150px)]">
-                    {groups.map(group => (
-                        <div
-                            key={group.id}
-                            onClick={() => setSelectedGroup(group)}
-                            className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer ${selectedGroup?.id === group.id ? "bg-blue-50" : "hover:bg-gray-50"}`}
-                        >
-                            <img
-                                src={`https://${group.avatar}`}
-                                alt={group.name}
-                                className="w-10 h-10 rounded-full object-cover"
-                            />
-                            <div className="flex-1">
-                                <h3 className="font-semibold">{group.name}</h3>
-                                <p className="text-xs text-gray-500 truncate">{group.lastMessage}</p>
+                    {groups.length === 0 ? (
+                        <p className="text-gray-500">No groups available.</p>
+                    ) : (
+                        groups.map(group => (
+                            <div
+                                key={group.id}
+                                onClick={() => setSelectedGroup(group)}
+                                className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer ${selectedGroup?.id === group.id ? "bg-blue-50" : "hover:bg-gray-50"}`}
+                            >
+                                {/* Display group avatar or placeholder */}
+                                <img
+                                    src={group.avatar ? `https://${group.avatar}` : "https://via.placeholder.com/40"}
+                                    alt={group.name || "Group"}
+                                    className="w-10 h-10 rounded-full object-cover"
+                                />
+                                <div className="flex-1">
+                                    <h3 className="font-semibold">{group.name || "Unnamed Group"}</h3>
+                                    <p className="text-xs text-gray-500 truncate">{group.description || "No description available."}</p>
+                                </div>
+                                {group.unreadCount > 0 && (
+                                    <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                                        {group.unreadCount}
+                                    </span>
+                                )}
                             </div>
-                            {group.unreadCount > 0 && (
-                                <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
-                                    {group.unreadCount}
-                                </span>
-                            )}
-                        </div>
-                    ))}
+                        ))
+                    )}
                 </div>
             </aside>
 
@@ -125,13 +132,13 @@ const GroupChat = () => {
                         <header className="bg-white border-b p-4">
                             <div className="flex items-center space-x-3">
                                 <img
-                                    src={`https://${selectedGroup.avatar}`}
-                                    alt={selectedGroup.name}
+                                    src={selectedGroup.avatar ? `https://${selectedGroup.avatar}` : "https://via.placeholder.com/40"}
+                                    alt={selectedGroup.name || "Group"}
                                     className="w-10 h-10 rounded-full object-cover"
                                 />
                                 <div>
                                     <h2 className="font-semibold">{selectedGroup.name}</h2>
-                                    <p className="text-sm text-gray-500">{selectedGroup.description}</p>
+                                    <p className="text-sm text-gray-500">{selectedGroup.description || "No description available."}</p>
                                 </div>
                             </div>
                         </header>
@@ -141,7 +148,7 @@ const GroupChat = () => {
                             {messages.map(message => (
                                 <div key={message.id} className="flex items-start space-x-3">
                                     <img
-                                        src={`https://${message.sender.avatar}`}
+                                        src={message.sender.avatar ? `https://${message.sender.avatar}` : "https://via.placeholder.com/40"}
                                         alt={message.sender.name}
                                         className="w-8 h-8 rounded-full object-cover"
                                     />
@@ -221,20 +228,20 @@ const GroupChat = () => {
                             <textarea
                                 value={newGroupData.description}
                                 onChange={(e) => setNewGroupData({ ...newGroupData, description: e.target.value })}
-                                placeholder="Description (optional)"
+                                placeholder="Description"
                                 className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             ></textarea>
                         </div>
-                        <div className="flex justify-end mt-6 space-x-4">
+                        <div className="mt-4 flex justify-end space-x-2">
                             <button
                                 onClick={() => setShowNewGroupModal(false)}
-                                className="text-gray-500 hover:text-gray-700 transition-colors"
+                                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleCreateGroup}
-                                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                             >
                                 Create
                             </button>

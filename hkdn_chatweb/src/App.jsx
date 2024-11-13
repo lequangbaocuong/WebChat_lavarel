@@ -6,6 +6,7 @@ import ForgetPass from './ForgetPass';
 import Navbar from './Component/Navbar';
 import ChatUI from './Component/ChatUI';
 import ChatPage from './ChatPage';
+import GoogleCallback from './GoogleCallBack';
 const App = () => {
     return (
         <Router>
@@ -16,6 +17,7 @@ const App = () => {
                 <Route path="/forget" element={<ForgetPass />} />
                 <Route path="/test" element={<Navbar />} />
                 <Route path="/home" element={<ChatPage />} />
+                <Route path="/auth/google" element={<GoogleCallback  />} />
             </Routes>
         </Router>
     );

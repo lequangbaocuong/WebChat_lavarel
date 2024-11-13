@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useEffect } from 'react';
 import { FaEye, FaEyeSlash, FaGoogle, FaGithub, FaMicrosoft } from "react-icons/fa";
 import { BiLoaderAlt } from "react-icons/bi";
 import { Link, useNavigate } from 'react-router-dom';
@@ -17,23 +18,27 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const commonDomains = ["@gmail.com", "@yahoo.com", "@outlook.com", "@hotmail.com"];
 
-  // Function to handle Google sign-in button click
-  const handleGoogleSignIn = async () => {
-    try {
-      // Make an API request to retrieve the Google sign-in URL
-      const response = await fetch('http://127.0.0.1:8000/api/auth/google');
-      const data = await response.json();
+  const [loginUrl, setLoginUrl] = useState(null);
 
-      if (data.url) {
-        window.location.href = data.url; // Redirect to the Google sign-in page
-      } else {
-        console.error('Error: No URL returned from API.');
-      }
-    } catch (error) {
-      console.error('Error during Google sign-in:', error);
-    }
-  };
-
+  useEffect(() => {
+      fetch('http://localhost:8000/api/auth', {
+          headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+          }
+      })
+      .then((response) => {
+          if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+      })
+      .then((data) => setLoginUrl(data.url))
+      .catch((error) => {
+          console.error('Error fetching auth URL:', error);
+          alert('Failed to fetch authentication URL. Please try again later.');
+      });
+  }, []);
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!errors.email && !errors.password && email && password) {
@@ -172,11 +177,12 @@ const LoginPage = () => {
             </div>
 
             <div className="mt-6 grid grid-cols-3 gap-3">
-              <button
-                type="button"
-                onClick={handleGoogleSignIn}
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-              >
+            <button
+              type="button"
+              onClick={() => window.location.href = loginUrl} // Wrap in a function
+              className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+              disabled={!loginUrl} // Optionally disable button until `loginUrl` is set
+            >
                 <FaGoogle className="h-5 w-5 text-red-500" />
               </button>
               <button
