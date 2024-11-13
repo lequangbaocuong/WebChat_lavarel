@@ -58,8 +58,8 @@ const LoginPage = () => {
 
           setShowNotification(true);
           setTimeout(() => {
-            localStorage.setItem('email', response.data.email);
-            localStorage.setItem('auth_token', response.data.token);
+            localStorage.setItem('user_email', response.data.email);
+            localStorage.setItem('auth_token', response.data.access_token);
             navigate('/home');
           }, 3000);
         } else {
