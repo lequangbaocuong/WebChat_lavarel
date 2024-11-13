@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { FaCheckCircle, FaTimes } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
-const RegistrationSuccess = () => {
+const RegistrationSuccess = ({ ULR, ULR2, mes1, mes2, btleft, btright }) => {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(true);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -25,16 +25,15 @@ const RegistrationSuccess = () => {
       setIsVisible(false);
       setIsAnimating(false);
     }, 300);
+    navigate("/" + ULR2);
   };
 
   const handleOutsideClick = (e) => {
-    if (e.target.classList.contains("overlay")) {
-      handleClose();
-    }
+    navigate("/" + ULR2);
   };
 
   const handleNavigateToLogin = () => {
-    navigate("/login");
+    navigate("/" + ULR);
   };
 
   if (!isVisible) return null;
@@ -69,11 +68,11 @@ const RegistrationSuccess = () => {
             id="notification-title"
             className="text-2xl font-bold text-gray-800 mb-2"
           >
-            Đăng ký thành công
+            {mes1}
           </h2>
 
           <p className="text-gray-600 mb-6">
-            Hãy đăng nhập để tiếp tục sử dụng
+            {mes2}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 w-full">
@@ -81,14 +80,14 @@ const RegistrationSuccess = () => {
               onClick={handleClose}
               className="w-full sm:w-1/2 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
             >
-              Đăng ký lại
+              {btleft}
             </button>
             <button
               onClick={handleNavigateToLogin}
-              className="w-full sm:w-1/2 px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+              className="w-full sm:w-1/2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg hover:bg-green-600 transition-colors"
               autoFocus
             >
-              Trở về đăng nhập
+              {btright}
             </button>
           </div>
         </div>

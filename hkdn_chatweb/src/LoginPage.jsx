@@ -6,17 +6,20 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from "axios";
 import './styles/tailwind.css';
 import { handleEmailChange, handlePasswordChange, selectDomain } from './utils/validators';
-
+import NotificationPopup from './Component/NotificationPopup'
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({ email: "", password: "" });
+  const [showNotification, setShowNotification] = useState(false);
+  const commonDomains = ["@gmail.com", "@yahoo.com", "@outlook.com", "@hotmail.com"];
+
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const navigate = useNavigate();
-  const commonDomains = ["@gmail.com", "@yahoo.com", "@outlook.com", "@hotmail.com"];
+
 
   const [loginUrl, setLoginUrl] = useState(null);
 
@@ -51,9 +54,14 @@ const LoginPage = () => {
         });
 
         if (response.data.success) {
-          localStorage.setItem('auth_token', response.data.access_token); // Save token for future use
-          localStorage.setItem('user_email', response.data.email); // Store the email
-          navigate('/home'); // Navigate to home page on success
+
+
+          setShowNotification(true);
+          setTimeout(() => {
+            localStorage.setItem('email', response.data.email);
+            localStorage.setItem('auth_token', response.data.token);
+            navigate('/home');
+          }, 3000);
         } else {
           setErrors({ ...errors, form: response.data.message });
           console.log("Login failed:", response.data.message);
@@ -208,6 +216,7 @@ const LoginPage = () => {
           </Link>
         </p>
       </div>
+      {showNotification && (<NotificationPopup />)}
     </div>
   );
 };
