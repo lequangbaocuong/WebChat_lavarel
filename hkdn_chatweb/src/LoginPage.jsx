@@ -24,22 +24,22 @@ const LoginPage = () => {
   const [loginUrl, setLoginUrl] = useState(null);
 
   useEffect(() => {
-      fetch('http://localhost:8000/api/auth', {
-          headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-          }
-      })
+    fetch('http://localhost:8000/api/auth', {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    })
       .then((response) => {
-          if (!response.ok) {
-              throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-          return response.json();
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
       })
       .then((data) => setLoginUrl(data.url))
       .catch((error) => {
-          console.error('Error fetching auth URL:', error);
-          alert('Failed to fetch authentication URL. Please try again later.');
+        console.error('Error fetching auth URL:', error);
+        alert('Failed to fetch authentication URL. Please try again later.');
       });
   }, []);
   const handleSubmit = async (e) => {
@@ -83,7 +83,7 @@ const LoginPage = () => {
             HKDN Chat
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Please log in to continue
+            Vui lòng đăng nhập để tiếp tục
           </p>
         </div>
 
@@ -91,7 +91,7 @@ const LoginPage = () => {
           <div className="rounded-md -space-y-px">
             {/* Email Input */}
             <div className="relative mb-4">
-              <label htmlFor="email" className="sr-only">Email address</label>
+              <label htmlFor="email" className="sr-only">Email</label>
               <input
                 id="email"
                 name="email"
@@ -157,7 +157,7 @@ const LoginPage = () => {
           <div className="flex items-center justify-between">
             <div className="text-sm">
               <Link to="/forget" className="font-medium text-indigo-600 hover:text-indigo-500">
-                Forgot password?
+                Quên mật khẩu?
               </Link>
             </div>
           </div>
@@ -185,12 +185,12 @@ const LoginPage = () => {
             </div>
 
             <div className="mt-6 grid grid-cols-3 gap-3">
-            <button
-              type="button"
-              onClick={() => window.location.href = loginUrl} // Wrap in a function
-              className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-              disabled={!loginUrl} // Optionally disable button until `loginUrl` is set
-            >
+              <button
+                type="button"
+                onClick={() => window.location.href = loginUrl} // Wrap in a function
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                disabled={!loginUrl} // Optionally disable button until `loginUrl` is set
+              >
                 <FaGoogle className="h-5 w-5 text-red-500" />
               </button>
               <button
@@ -210,9 +210,9 @@ const LoginPage = () => {
         </form>
 
         <p className="mt-8 text-center text-sm text-gray-600">
-          Don't have an account?{" "}
+          Không có tài khoản?{" "}
           <Link to="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
-            Sign up now
+            Đăng ký ngay
           </Link>
         </p>
       </div>

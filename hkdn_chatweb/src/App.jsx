@@ -6,7 +6,9 @@ import ForgetPass from './ForgetPass';
 import Navbar from './Component/Navbar';
 import ChatUI from './Component/ChatUI';
 import ChatPage from './ChatPage';
-import HomePage from './HomePage/Homepage';
+
+import HomePage from './HomePage';
+
 import ResetPassPage from './ResetPassPage'
 import VideoCallPage from './VideoCallPage'
 import OTPInput from './OTPInput';
