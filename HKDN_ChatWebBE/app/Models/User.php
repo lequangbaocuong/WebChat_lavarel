@@ -2,11 +2,12 @@
 
 namespace App\Models;
 
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Notifications\Notifiable;
 use App\Notifications\ResetPasswordNotification;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
@@ -21,6 +22,7 @@ class User extends Authenticatable
         'username',
         'email',
         'password',
+        'profile_img_path', 'role_id',
         'otp',
         'status',
         'google_id', 
@@ -59,5 +61,13 @@ class User extends Authenticatable
     public function rooms()
     {
         return $this->belongsToMany(Room::class, 'table_room_users', 'user_id', 'room_id');
+    }
+    public function role()
+    {
+        return $this->belongsTo(Role::class); // Assuming you have a Role model
+    }
+    public function messages(): HasMany
+    {
+        return $this->hasMany(Message::class);
     }
 }
