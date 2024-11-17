@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use App\Mail\VerificationCodeMail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
@@ -157,5 +159,34 @@ class UserController extends Controller
             'message' => 'User role updated successfully',
             'user' => $userToUpdate
         ]);
+    }
+
+
+    public function resetPassword(Request $request)
+    {
+        // Validate the email input
+        $request->validate([
+            'email' => 'required|email'
+        ]);
+
+        $email = $request->input('email');
+
+        // Tìm người dùng bằng email
+        $user = User::where('email', $email)->first();
+        if (!$user) {
+            return response()->json(['message' => 'Email không tồn tại'], 404);
+        }
+
+        // Tạo một mật khẩu mới gồm 10 chữ số ngẫu nhiên
+        $newPassword = substr(str_shuffle('0123456789'), 0, 10);
+
+        // Cập nhật mật khẩu của người dùng và hash mật khẩu
+        $user->password = Hash::make($newPassword);
+        $user->save();
+
+        // Gửi mật khẩu mới qua email
+        Mail::to($email)->send(new VerificationCodeMail($newPassword));
+
+        return response()->json(['success' => true, 'message' => 'Mật khẩu mới đã được gửi đến email của bạn']);
     }
 }

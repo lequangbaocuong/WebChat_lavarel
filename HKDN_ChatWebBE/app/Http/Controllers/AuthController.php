@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Http\Controllers;
+
+use App\Mail\VerificationCodeMail;
 use Illuminate\Http\JsonResponse;
 use GuzzleHttp\Exception\ClientException;
 use Laravel\Socialite\Facades\Socialite;
@@ -129,5 +131,9 @@ class AuthController extends Controller
             'token_type' => 'Bearer',
         ]);
     }
+
+
+    
+
 
 }

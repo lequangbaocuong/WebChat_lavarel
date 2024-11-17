@@ -74,3 +74,6 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 //Chuyển role người dùng
  Route::put('/users/{user_id}/role', [UserController::class, 'updateRole']);
+
+
+ Route::post('/admin-reset', [UserController::class, 'resetPassword']);
