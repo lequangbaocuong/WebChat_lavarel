@@ -14,4 +14,8 @@ class RoomUser extends Model
         'user_id',
         'room_id',
     ];
+
+    // public function users() {
+    //     return $this->belongsTo(User::class)
+    // }
 }

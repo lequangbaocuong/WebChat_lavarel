@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Room\AddUserToRoomRequest;
+use App\Http\Requests\Room\GetRoomUserRequest;
 use App\Models\Room;
 use App\Models\User;
 use App\Models\RoomUser;
-use Illuminate\Http\Response;
+// use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
@@ -201,5 +204,48 @@ class RoomController extends Controller
             'success' => true,
             'message' => 'User removed from the room successfully',
         ], Response::HTTP_OK);
+    }
+
+    public function addUserToRoom(AddUserToRoomRequest $request) {
+        $field = $request->validated();
+
+        $room = Room::find($field['room_id']);
+        $emails = $field['emails'];
+        $exist = 0;
+
+        foreach ($emails as $email) {
+            $user = User::where('email', $email)->first();
+            $existingRoomUser = RoomUser::where('user_id', $user->id)
+                ->where('room_id', $room->id)
+                ->first();
+
+            if ($existingRoomUser) {
+                $exist++;
+                continue;
+            }
+
+            RoomUser::create([
+                'user_id' => $user->id,
+                'room_id' => $room->id,
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User joined the room successfully',
+            'room' => $room,
+        ], Response::HTTP_OK);
+    }
+
+    public function getRoomUser(GetRoomUserRequest $request) {
+        $field = $request->validated();
+
+        $users = User::whereHas('rooms', function ($query) use ($field) {
+                    $query->where('room_id', $field['room_id']);
+                })->get();
+
+        return response([
+            'users' => $users
+        ], 200);
     }
 }

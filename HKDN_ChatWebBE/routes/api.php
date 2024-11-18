@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
@@ -45,3 +46,7 @@ Route::post('/createroom', [RoomController::class, 'create']);
 Route::post('/joinroom', [RoomController::class, 'joinroom']);
 Route::post('/leave', [RoomController::class, 'leaveRoom']);
 Route::middleware('auth:sanctum')->post('/remove-user-from-room', [RoomController::class, 'removeUserFromRoom']);
+
+Route::get('/room/user', [RoomController::class, 'getRoomUser']);
+Route::post('/add-user-to-room', [RoomController::class, 'addUserToRoom']);
+Route::get('/find-user', [UserController::class, 'find']);
