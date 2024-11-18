@@ -7,6 +7,7 @@ import axios from "axios";
 import './styles/tailwind.css';
 import { handleEmailChange, handlePasswordChange, selectDomain } from './utils/validators';
 import NotificationPopup from './Component/NotificationPopup'
+const LogoUrl = "/HKDN.png";
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,25 +24,7 @@ const LoginPage = () => {
 
   const [loginUrl, setLoginUrl] = useState(null);
 
-  useEffect(() => {
-    fetch('http://localhost:8000/api/auth', {
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      }
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then((data) => setLoginUrl(data.url))
-      .catch((error) => {
-        console.error('Error fetching auth URL:', error);
-        alert('Failed to fetch authentication URL. Please try again later.');
-      });
-  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!errors.email && !errors.password && email && password) {
@@ -78,11 +61,9 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-2xl transform transition-all hover:scale-[1.01]">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            HKDN Chat
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+        <div className="flex flex-col justify-center items-center">
+          <img className="" src={LogoUrl} alt="Logo" />
+          <p className="mt-2 text-center font-bold text-sm text-indigo-600">
             Vui lòng đăng nhập để tiếp tục
           </p>
         </div>
