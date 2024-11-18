@@ -8,6 +8,8 @@ import IntroPage from "./Component/IntroductionPage";
 import Profile from "./Component/ProfilePage";
 import SidebarIcons from "./Component/SidebarIcons";
 import axios from "axios";
+import GroupMemberModal from "./Component/GroupMemberModal";
+
 const HomePage = () => {
     const [selectedChat, setSelectedChat] = useState(null);
     const [message, setMessage] = useState("");
@@ -27,6 +29,9 @@ const HomePage = () => {
     const [newGroupData, setNewGroupData] = useState({ name: "", description: "" });
     const [groups, setGroups] = useState([]);
     const [isTyping, setIsTyping] = useState(false);
+
+    const [showMemberModal, setShowMemberModal] = useState(false);
+    const [roomUsers, setRoomUsers] = useState([]);
 
     const currentUser = {
         id: 0,
@@ -178,6 +183,34 @@ const HomePage = () => {
         setShowAvatarMenu((prev) => !prev);
     };
 
+    const fetchRoomUser = () => {
+        axios.get("http://localhost:8000/api/room/user", {
+            params: {
+                room_id: selectedChat.id,
+            }
+        }, {
+            // headers: {
+            //     Authorization: `Bearer ${token}`,
+            // },
+        })
+        .then(response => {
+            console.log(response.data)
+            setRoomUsers(response.data.users);
+        })
+        .catch(error => {
+            console.error("Error fetching members:", error);
+        });
+    }
+
+    const openMemberModal = () => {
+        setShowMemberModal(true);
+        fetchRoomUser();
+    }
+
+    const closeMemberModal = () => {
+        setShowMemberModal(false)
+    }
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (avatarMenuRef.current && !avatarMenuRef.current.contains(event.target)) {
@@ -282,6 +315,7 @@ const HomePage = () => {
                                             </li>
                                             <li className="p-2 hover:bg-gray-100 cursor-pointer">Delete Chat</li>
                                             <li className="p-2 hover:bg-gray-100 cursor-pointer">Block</li>
+                                            <li className="p-2 hover:bg-gray-100 cursor-pointer" onClick={openMemberModal}>Members</li>
                                         </ul>
                                     </div>
                                 )}
@@ -348,7 +382,6 @@ const HomePage = () => {
                     <IntroPage />
                 )}
             </div>
-
             {/* Profile */}
             {showProfileModal && profileData && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-20">
@@ -413,6 +446,15 @@ const HomePage = () => {
                     </div>
                 </div>
             )}
+
+
+            <GroupMemberModal
+                isShowMemberModal={showMemberModal}
+                closeModal={closeMemberModal} 
+                users={roomUsers} 
+                group={selectedChat}
+                updateRoomUser={fetchRoomUser} />
+            
         </div>
     );
 };
