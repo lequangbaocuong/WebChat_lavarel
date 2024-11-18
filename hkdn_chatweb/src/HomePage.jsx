@@ -194,7 +194,6 @@ const HomePage = () => {
             // },
         })
         .then(response => {
-            console.log(response.data)
             setRoomUsers(response.data.users);
         })
         .catch(error => {
@@ -202,14 +201,30 @@ const HomePage = () => {
         });
     }
 
+    const addRoomUsers = (newUsers) => {
+        console.log(newUsers);
+        setRoomUsers([...roomUsers, ...newUsers])
+    }
+
+    const removeRoomUser = (user) => {
+        setRoomUsers(roomUsers.filter(u => u.id != user.id))
+    }
+
     const openMemberModal = () => {
         setShowMemberModal(true);
-        fetchRoomUser();
     }
 
     const closeMemberModal = () => {
         setShowMemberModal(false)
     }
+
+    useEffect(() => {
+        if (selectedChat) {
+            setRoomUsers([]);
+            fetchRoomUser();
+        }
+            
+    }, [selectedChat])
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -453,7 +468,9 @@ const HomePage = () => {
                 closeModal={closeMemberModal} 
                 users={roomUsers} 
                 group={selectedChat}
-                updateRoomUser={fetchRoomUser} />
+                addRoomUsers={addRoomUsers}
+                removeRoomUser={removeRoomUser}
+            />
             
         </div>
     );

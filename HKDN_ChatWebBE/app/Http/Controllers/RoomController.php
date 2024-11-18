@@ -213,6 +213,7 @@ class RoomController extends Controller
         $emails = $field['emails'];
         $exist = 0;
 
+        $users = [];
         foreach ($emails as $email) {
             $user = User::where('email', $email)->first();
             $existingRoomUser = RoomUser::where('user_id', $user->id)
@@ -228,13 +229,15 @@ class RoomController extends Controller
                 'user_id' => $user->id,
                 'room_id' => $room->id,
             ]);
+
+            $users[] = $user;
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'User joined the room successfully',
-            'room' => $room,
-        ], Response::HTTP_OK);
+            'message' => 'Added successfully',
+            'users' => $users,
+        ], status: Response::HTTP_OK);
     }
 
     public function getRoomUser(GetRoomUserRequest $request) {
