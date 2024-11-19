@@ -193,12 +193,12 @@ const HomePage = () => {
             //     Authorization: `Bearer ${token}`,
             // },
         })
-        .then(response => {
-            setRoomUsers(response.data.users);
-        })
-        .catch(error => {
-            console.error("Error fetching members:", error);
-        });
+            .then(response => {
+                setRoomUsers(response.data.users);
+            })
+            .catch(error => {
+                console.error("Error fetching members:", error);
+            });
     }
 
     const addRoomUsers = (newUsers) => {
@@ -223,7 +223,7 @@ const HomePage = () => {
             setRoomUsers([]);
             fetchRoomUser();
         }
-            
+
     }, [selectedChat])
 
     useEffect(() => {
@@ -400,7 +400,7 @@ const HomePage = () => {
             {/* Profile */}
             {showProfileModal && profileData && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-20">
-                    <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+                    <div className="bg-white p-6 rounded-lg shadow-lg w-105">
                         <h2 className="text-xl font-semibold mb-4">Profile</h2>
                         <div className="flex items-center mb-4">
                             <img
@@ -465,13 +465,13 @@ const HomePage = () => {
 
             <GroupMemberModal
                 isShowMemberModal={showMemberModal}
-                closeModal={closeMemberModal} 
-                users={roomUsers} 
+                closeModal={closeMemberModal}
+                users={roomUsers}
                 group={selectedChat}
                 addRoomUsers={addRoomUsers}
                 removeRoomUser={removeRoomUser}
             />
-            
+
         </div>
     );
 };

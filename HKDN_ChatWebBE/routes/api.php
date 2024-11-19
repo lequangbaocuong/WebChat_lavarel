@@ -4,13 +4,15 @@ use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\AuthGoogleController;
+use App\Http\Controllers\RoomController;
+
 use App\Http\Controllers\GoogleController;
+use App\Http\Controllers\MessageController;
+use App\Http\Controllers\HomepageController;
+use App\Http\Controllers\AuthGoogleController;
+use App\Http\Controllers\VerificationController;
 use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\ForgotPasswordController;
-use App\Http\Controllers\RoomController;
-use App\Http\Controllers\HomepageController;
-use App\Http\Controllers\VerificationController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -42,11 +44,43 @@ Route::middleware(['web'])->group(function () {
 
 
 Route::middleware('auth:sanctum')->get('/rooms', [RoomController::class, 'index']);
+
+// Route để lấy danh sách tất cả các phòng
+Route::get('/showrooms', [RoomController::class, 'show']);
 Route::post('/createroom', [RoomController::class, 'create']);
-Route::post('/joinroom', [RoomController::class, 'joinroom']);
+// Route để cập nhật phòng (update room) với room_id trong URL
+Route::put('/rooms/update/{room_id}', [RoomController::class, 'update']);
+
+// Route để xóa phòng (delete room) với room_id trong URL
+Route::delete('/rooms/destroy/{room_id}', [RoomController::class, 'destroy']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/joinroom', [RoomController::class, 'joinroom']);
+});
 Route::post('/leave', [RoomController::class, 'leaveRoom']);
 Route::middleware('auth:sanctum')->post('/remove-user-from-room', [RoomController::class, 'removeUserFromRoom']);
+
 
 Route::get('/room/user', [RoomController::class, 'getRoomUser']);
 Route::post('/add-user-to-room', [RoomController::class, 'addUserToRoom']);
 Route::get('/find-user', [UserController::class, 'find']);
+
+Route::prefix('users')->middleware('auth:sanctum')->group(function() {
+    Route::get('/', [UserController::class, 'index']);        // List users
+    Route::post('/', [UserController::class, 'store']);       // Add user
+    Route::put('/{id}', [UserController::class, 'update']);   // Edit user
+    Route::delete('/{id}', [UserController::class, 'destroy']); // Delete user
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/rooms/{roomId}/messages', [MessageController::class, 'getMessages']);
+    Route::post('/rooms/{roomId}/messages', [MessageController::class, 'sendMessage']);
+    Route::delete('/rooms/{roomId}/messages/{messageId}', [MessageController::class, 'deleteMessage']);
+});
+//Chuyển role người dùng
+ Route::put('/users/{user_id}/role', [UserController::class, 'updateRole']);
+
+
+ Route::post('/admin-reset', [UserController::class, 'resetPassword']);
+ 
+ Route::post('/user/profile', [UserController::class, 'getProfile']);

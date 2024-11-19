@@ -11,13 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('table_room_users', function (Blueprint $table) {
+        Schema::create('messages', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id'); // Cột 'creator_id' là khóa ngoại
             $table->unsignedBigInteger('room_id'); // Cột 'creator_id' là khóa ngoại
-            $table->timestamps();
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('room_id')->references('id')->on('table_rooms')->onDelete('cascade');
+            $table->text('content'); // Nội dung tin nhắn
+            $table->timestamps();
         });
     }
 
@@ -26,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('table_room_users');
+        Schema::dropIfExists('messages');
     }
 };

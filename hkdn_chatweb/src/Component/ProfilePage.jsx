@@ -1,12 +1,47 @@
-import React, { useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { MdCloudUpload } from "react-icons/md";
-
+import { FaArrowLeft } from 'react-icons/fa';
+import axios from "axios";
 const ProfilePage = ({ closeProfile }) => {
     const [profileData, setProfileData] = useState({
-        name: "Cường",
-        email: "lequangbaocuong@gmail.com",
-        phone: "+84 935 089 651",
+        name: "",
+        email: "",
+        phone: "",
     });
+    const [error, setError] = useState("");
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                // Lấy email từ localStorage
+                const email = localStorage.getItem("user_email");
+
+                if (!email) {
+                    setError("Email không được tìm thấy trong localStorage.");
+                    return;
+                }
+
+                // Gửi email lên API Laravel
+                const response = await axios.post("http://localhost:8000/api/user/profile", {
+                    email: email,
+                });
+                const data = response.data;
+
+                // Cập nhật state với dữ liệu từ API
+                setProfileData({
+                    name: data.name,
+                    email: data.email,
+                    phone: data.phone,
+                });
+                setError(""); // Xóa lỗi nếu có
+            } catch (err) {
+                console.error("Lỗi khi lấy dữ liệu từ API:", err);
+                setError("Không tìm thấy thông tin người dùng."); // Hiển thị lỗi
+            }
+        };
+
+        fetchProfile(); // Gọi API khi component được mount
+    }, []);
+
 
     const [profileImage, setProfileImage] = useState("https://inkythuatso.com/uploads/thumbnails/800/2023/03/6-anh-dai-dien-trang-inkythuatso-03-15-26-36.jpg");
     const fileInputRef = useRef(null);
@@ -58,9 +93,9 @@ const ProfilePage = ({ closeProfile }) => {
                         {!isEditing && (
                             <button
                                 onClick={closeProfile}
-                                className="text-blue-600 hover:underline focus:outline-none"
+                                className="flex items-center justify-center w-10 h-10 bg-blue-500 text-white rounded-full shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
                             >
-                                &lt; Quay lại
+                                <FaArrowLeft className="w-5 h-5" />
                             </button>
                         )}
                     </div>

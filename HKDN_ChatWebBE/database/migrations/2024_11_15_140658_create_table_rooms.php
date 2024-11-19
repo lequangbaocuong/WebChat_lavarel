@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('table_rooms', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('profile_img_path')->nullable();
             $table->unsignedBigInteger('creator_id'); // Cột 'creator_id' là khóa ngoại
             $table->timestamps();
             $table->foreign('creator_id')->references('id')->on('users')->onDelete('cascade');
@@ -25,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('table_rooms');
+        Schema::dropIfExists('rooms');
     }
 };
