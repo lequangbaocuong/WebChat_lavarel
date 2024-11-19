@@ -19,11 +19,9 @@ import Dashboard from "./Component/Admin/Dashboard";
 import ChangePassword from "./Component/Admin/ChangePassword";
 import ForgotPassword from "./Component/Admin/ForgotPassword";
 import UsersList from "./Component/Admin/Users/UsersList";
-import AddUser from "./Component/Admin/Users/AddUser";
-import EditUser from "./Component/Admin/Users/EditUser";
+
 import RoomsList from "./Component/Admin/Rooms/RoomsList";
-import AddRoom from "./Component/Admin/Rooms/AddRoom";
-import EditRoom from "./Component/Admin/Rooms/EditRoom";
+
 const App = () => {
   return (
     <Router>
@@ -46,14 +44,11 @@ const App = () => {
           {/* Quản lý Người Dùng */}
           <Route path="users">
             <Route index element={<UsersList />} />
-            <Route path="add" element={<AddUser />} />
-            <Route path="edit/:id" element={<EditUser />} />
           </Route>
           {/* Quản lý Phòng */}
           <Route path="rooms">
             <Route index element={<RoomsList />} />
-            <Route path="add" element={<AddRoom />} />
-            <Route path="edit/:id" element={<EditRoom />} />
+
           </Route>
         </Route>
       </Routes>
