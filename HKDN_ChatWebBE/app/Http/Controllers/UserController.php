@@ -91,6 +91,37 @@ class UserController extends Controller
     }
 
     // Edit user - Only allowed for role_id = 1
+
+
+    public function changePassword(Request $request)
+    {
+        // Validate input
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'old_password' => 'required',
+            'new_password' => 'required|min:8|confirmed', // new_password_confirmation phải được gửi kèm
+        ]);
+
+        // Find user by email
+        $user = User::where('email', $request->email)->first();
+
+        // Check if the old password is correct
+        if (!Hash::check($request->old_password, $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mật khẩu cũ không đúng.'
+            ], 400);
+        }
+
+        // Update password
+        $user->password = Hash::make($request->new_password);
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đổi mật khẩu thành công.'
+        ]);
+    }
     public function update(Request $request, $id)
     {
         if (Auth::user()->role_id !== 1) {
@@ -115,7 +146,7 @@ class UserController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json(['success'=>true,'errors' => $validator->errors()], 422);
         }
 
         // Update the user

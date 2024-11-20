@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('profile_img_path')->nullable();
             $table->unsignedBigInteger('creator_id'); // Cột 'creator_id' là khóa ngoại
+            $table->string('avatar')->nullable()->default("gr.png");
             $table->timestamps();
             $table->foreign('creator_id')->references('id')->on('users')->onDelete('cascade');
         });

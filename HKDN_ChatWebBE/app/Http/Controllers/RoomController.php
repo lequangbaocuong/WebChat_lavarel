@@ -127,20 +127,12 @@ class RoomController extends Controller
         ]);
     }
 
-    public function destroy(Request $request, $room_id)
+    public function destroy($room_id)
     {
-        $validated = $request->validate([
-            'email' => 'required|email|exists:users,email', // Validate email
-        ]);
-
-        $user = User::where('email', $validated['email'])->first();
-
-        if (!$user || $user->role_id !== 1) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Access denied. Only users with role_id 1 can delete rooms.'
-            ], Response::HTTP_FORBIDDEN);
+        if (Auth::user()->role_id !== 1) {
+            return response()->json(['message' => 'Access denied. Only users with role_id 1 can perform this action.'], 403);
         }
+        
 
         $room = Room::find($room_id);
         if (!$room) {

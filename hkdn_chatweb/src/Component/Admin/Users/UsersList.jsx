@@ -187,7 +187,7 @@ const UserManagementDashboard = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <img
-                          src={`https://`}
+                          src={`/${users.avatar}`}
                           alt={users.username}
                           className="h-10 w-10 rounded-full object-cover"
                           onError={(e) => {
@@ -207,7 +207,7 @@ const UserManagementDashboard = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      0921899124
+                      {users.phone}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
@@ -305,16 +305,7 @@ const UserManagementDashboard = () => {
                 </select>
                 {errors.role && <p className="mt-1 text-sm text-red-500">{errors.role}</p>}
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Số điện thoại</label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${errors.phone ? "border-red-500" : ""}`}
-                />
-                {errors.phone && <p className="mt-1 text-sm text-red-500">{errors.phone}</p>}
-              </div>
+
               <div className="flex justify-end space-x-3">
                 <button
                   type="button"
