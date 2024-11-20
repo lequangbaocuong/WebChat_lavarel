@@ -57,11 +57,13 @@ Route::delete('/rooms/destroy/{room_id}', [RoomController::class, 'destroy']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/joinroom', [RoomController::class, 'joinroom']);
 });
+
+
 Route::post('/leave', [RoomController::class, 'leaveRoom']);
 Route::middleware('auth:sanctum')->post('/remove-user-from-room', [RoomController::class, 'removeUserFromRoom']);
 
 
-Route::get('/room/user', [RoomController::class, 'getRoomUser']);
+Route::get('/room/{roomId}/users', [RoomController::class, 'getRoomUser']);
 Route::post('/add-user-to-room', [RoomController::class, 'addUserToRoom']);
 Route::get('/find-user', [UserController::class, 'find']);
 

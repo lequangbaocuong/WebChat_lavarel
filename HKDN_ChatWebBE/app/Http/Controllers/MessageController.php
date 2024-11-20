@@ -8,6 +8,7 @@ use App\Models\Room;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log; // Add this line
 
 class MessageController extends Controller
 {
@@ -24,6 +25,7 @@ class MessageController extends Controller
         // Kiểm tra xem phòng chat có tồn tại không
         $room = Room::find($roomId);
         if (!$room) {
+            Log::error('Room not found', ['roomId' => $roomId]);
             return response()->json([
                 'success' => false,
                 'message' => 'Phòng chat không tồn tại.'
@@ -32,6 +34,7 @@ class MessageController extends Controller
 
         // Kiểm tra xem người dùng có tham gia phòng chat không
         if (!$room->users()->where('user_id', $user->id)->exists()) {
+            Log::error('User does not have access to the room', ['userId' => $user->id, 'roomId' => $roomId]);
             return response()->json([
                 'success' => false,
                 'message' => 'Bạn không có quyền truy cập phòng chat này.'
@@ -46,6 +49,7 @@ class MessageController extends Controller
             'messages' => $messages
         ], 200);
     }
+
 
     /**
      * Gửi một tin nhắn trong phòng chat.

@@ -33,6 +33,10 @@ const HomePage = () => {
     const [showMemberModal, setShowMemberModal] = useState(false);
     const [roomUsers, setRoomUsers] = useState([]);
 
+    const [selectedRoom, setSelectedRoom] = useState(null);
+    const [messages, setMessages] = useState([]);
+    const [messageInput, setMessageInput] = useState('');
+
     const currentUser = {
         id: 0,
         name: "You",
@@ -78,45 +82,13 @@ const HomePage = () => {
         };
     }, []);
 
-    const messages = [
-        {
-            id: 1,
-            sender: "Friends",
-            content: "Hi",
-            time: "10:30 AM",
-            status: "read",
-            type: "received",
-        },
-        {
-            id: 2,
-            sender: "You",
-            content: "Hi",
-            time: "10:31 AM",
-            status: "read",
-            type: "sent",
-            readBy: [
-                {
-                    id: 1,
-                    avatar: "https://inkythuatso.com/uploads/thumbnails/800/2023/03/6-anh-dai-dien-trang-inkythuatso-03-15-26-36.jpg",
-                },
-            ],
-        },
-        {
-            id: 3,
-            sender: "You",
-            content: "Hello!",
-            time: "10:32 AM",
-            status: "failed",
-            type: "sent",
-            readBy: [],
-        },
-    ];
-
-    const handleSendMessage = () => {
-        if (message.trim()) {
-            setMessage("");
+    
+    useEffect(() => {
+        if (selectedRoom) {
+            fetchMessages(selectedRoom);
+            fetchRoomUser();
         }
-    };
+    }, [selectedRoom]);
 
     const handleKeyPress = (e) => {
         if (e.key === "Enter" && !e.shiftKey) {
@@ -183,27 +155,84 @@ const HomePage = () => {
         setShowAvatarMenu((prev) => !prev);
     };
 
-    const fetchRoomUser = () => {
-        axios.get("http://localhost:8000/api/room/user", {
-            params: {
-                room_id: selectedChat.id,
+    // Hàm để lấy thành viên nhóm
+    const fetchRoomUser = (roomId) => {
+        const token = localStorage.getItem("auth_token");
+        axios.get(`http://localhost:8000/api/room/${roomId}/users`, {
+            headers: {
+                Authorization: `Bearer ${token}`,  // Đảm bảo bạn có token nếu cần
             }
-        }, {
-            // headers: {
-            //     Authorization: `Bearer ${token}`,
-            // },
         })
-            .then(response => {
-                setRoomUsers(response.data.users);
-            })
-            .catch(error => {
-                console.error("Error fetching members:", error);
-            });
+        .then(response => {
+            console.log("Users in room:", response.data);
+        })
+        .catch(error => {
+            console.error("Error fetching users in room:", error);
+        });
     }
 
-    const addRoomUsers = (newUsers) => {
-        console.log(newUsers);
-        setRoomUsers([...roomUsers, ...newUsers])
+    const fetchMessages = async (roomId) => {
+        try {
+            const token = localStorage.getItem("auth_token");
+    
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+    
+            const response = await axios.get(`http://localhost:8000/api/rooms/${roomId}/messages`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+    
+            if (response.data.success) {
+                setMessages(response.data.messages);  // Lưu tin nhắn vào state
+            }
+        } catch (error) {
+            console.error('Error fetching messages:', error.message);
+        }
+    };
+    
+    useEffect(() => {
+        if (selectedRoom) {
+            fetchMessages(selectedRoom.id);  // Lấy tin nhắn từ server
+        }
+    }, [selectedRoom]);
+    
+    
+    const handleSendMessage = async () => {
+        if (!selectedRoom || !messageInput.trim()) return;
+    
+        const token = localStorage.getItem("auth_token");
+        try {
+            const response = await axios.post(
+                `http://localhost:8000/api/rooms/${selectedRoom.id}/messages`,
+                { content: messageInput },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+    
+            if (response.data.success) {
+                setMessages((prevMessages) => [...prevMessages, response.data.data]);  // Thêm tin nhắn mới vào state
+                setMessageInput("");
+            }
+        } catch (error) {
+            console.error("Error sending message:", error.response?.data || error);
+        }
+    };
+    
+
+    function addRoomUsers(newUsers) {
+        newUsers = newUsers || []; // Fallback to an empty array if newUsers is undefined or null
+    
+        if (Array.isArray(newUsers)) {
+            newUsers.forEach(user => {
+                // Add the user to the room (your existing logic)
+                console.log(user); // Just for debugging
+            });
+        } else {
+            console.error("newUsers is still not an array:", newUsers);
+            // Optionally handle the error case (e.g., show an error message)
+        }
     }
 
     const removeRoomUser = (user) => {
@@ -220,11 +249,10 @@ const HomePage = () => {
 
     useEffect(() => {
         if (selectedChat) {
-            setRoomUsers([]);
-            fetchRoomUser();
+            fetchMessages(selectedChat.id); // Lấy tin nhắn của nhóm đã chọn
+            fetchRoomUser(selectedChat.id); // Lấy thành viên nhóm đã chọn
         }
-
-    }, [selectedChat])
+    }, [selectedChat]); // Lắng nghe sự thay đổi của selectedChat
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -337,58 +365,48 @@ const HomePage = () => {
                             </div>
                         </div>
 
-                        {/* Messages */}
+                        {/* Display Messages */}
                         <div className="flex-1 overflow-y-auto p-4">
-                            {messages.map((msg) => (
-                                <div
-                                    key={msg.id}
-                                    className={`flex ${msg.type === "sent" ? "justify-end" : "justify-start"} mb-4`}
-                                >
+                            {messages.length > 0 ? (
+                                messages.map((msg) => (
                                     <div
-                                        className={`p-3 rounded-lg max-w-xs ${msg.type === "sent" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-900"
-                                            }`}
+                                        key={msg.id}
+                                        className={`flex ${msg.user.id === currentUser.id ? "justify-end" : "justify-start"} mb-4`}
                                     >
-                                        <p>{msg.content}</p>
-                                        <div className="text-xs text-white-500 mt-1 flex items-center">
-                                            {msg.time}
-                                            {msg.type === "sent" && (
-                                                <div className="ml-2 flex items-center">
-                                                    {msg.status === "sending" && <span>Đang gửi...</span>}
-                                                    {msg.status === "sent" && <FaCheck className="text-white ml-1" />}
-                                                    {msg.status === "delivered" && <FaCheck className="text-white ml-1" />}
-                                                    {msg.status === "read" && (
-                                                        <div className="flex items-center ml-1">
-                                                            {msg.readBy.map((user) => (
-                                                                <img
-                                                                    key={user.id}
-                                                                    src={user.avatar}
-                                                                    alt="User avatar"
-                                                                    className="w-5 h-5 rounded-full border-2 border-white ml-1"
-                                                                />
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                    {msg.status === "failed" && <FaExclamationCircle className="text-red-500 ml-1" />}
-                                                </div>
-                                            )}
+                                        <div
+                                            className={`p-3 rounded-lg max-w-xs ${msg.user.id === currentUser.id ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-900"}`}
+                                        >
+                                            <p>{msg.content}</p>
+                                            <div className="text-xs text-gray-500 mt-1 flex items-center">
+                                                {new Date(msg.created_at).toLocaleTimeString()} {/* Hiển thị thời gian gửi tin */}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))
+                            ) : (
+                                <p>No messages yet</p> // Hiển thị khi không có tin nhắn nào
+                            )}
                         </div>
 
+                        {/* Input for Sending Messages */}
                         <div className="p-4 bg-white border-t border-gray-200 flex items-center">
                             <FiSmile className="text-gray-500 cursor-pointer mr-4" />
                             <FiPaperclip className="text-gray-500 cursor-pointer mr-4" />
                             <input
                                 type="text"
-                                value={message}
-                                onChange={(e) => setMessage(e.target.value)}
-                                onKeyPress={handleKeyPress}
+                                value={messageInput}
+                                onChange={(e) => setMessageInput(e.target.value)}
+                                onKeyPress={(e) => {
+                                    if (e.key === "Enter") handleSendMessage(); // Send message on Enter key
+                                }}
                                 placeholder="Gửi tin nhắn"
                                 className="flex-1 px-4 py-2 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
-                            <button onClick={handleSendMessage} className="ml-4 text-blue-500 hover:text-blue-600">
+                            <button
+                                onClick={handleSendMessage}
+                                disabled={!messageInput} // Disable button if input is empty
+                                className="ml-4 text-blue-500 hover:text-blue-600"
+                            >
                                 <IoMdSend size={24} />
                             </button>
                         </div>

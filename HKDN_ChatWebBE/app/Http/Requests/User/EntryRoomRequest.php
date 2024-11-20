@@ -22,22 +22,25 @@ class EntryRoomRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => 'required|email|exists:users,email', // Kiểm tra email hợp lệ và tồn tại
-            'room_id' => 'required|exists:table_rooms,id',  // Kiểm tra room_id tồn tại trong bảng table_rooms
+            'emails' => 'required|array', // Ensure 'emails' is an array
+            'emails.*' => 'required|email|exists:users,email', // Validate each email
+            'room_id' => 'required|exists:table_rooms,id', // Check if room_id exists
         ];
     }
 
-     /**
-     * Tùy chỉnh thông báo lỗi.
+    /**
+     * Custom error messages.
      *
      * @return array
      */
     public function messages()
     {
         return [
-            'email.required' => 'Email is required.',
-            'email.email' => 'Invalid email format.',
-            'email.exists' => 'This email does not exist in our records.',
+            'emails.required' => 'Emails are required.',
+            'emails.array' => 'Emails must be an array.',
+            'emails.*.required' => 'Each email is required.',
+            'emails.*.email' => 'Each email must be a valid email address.',
+            'emails.*.exists' => 'One or more emails do not exist in our records.',
             'room_id.required' => 'Room ID is required.',
             'room_id.exists' => 'This room does not exist.',
         ];

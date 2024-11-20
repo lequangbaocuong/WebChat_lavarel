@@ -63,6 +63,13 @@ class RoomController extends Controller
             'rooms' => $rooms
         ]);
     }
+    public function getRoomUser($roomId)
+    {
+        // Logic to fetch user associated with the room
+        $room = Room::findOrFail($roomId);
+        $user = $room->user; // Assuming each room has a user associated with it
+        return response()->json($user);
+    }
     
     // Create room - Allowed for role_id 1 and 3
     public function create(CreateRoomRequest $request)
@@ -160,10 +167,10 @@ class RoomController extends Controller
 
     public function joinroom(EntryRoomRequest $request)
     {
-        // Dữ liệu đã được xác thực qua EntryRoomRequest
+        // Validate the request data
         $validated = $request->validated();
 
-        // Kiểm tra nếu người dùng đã đăng nhập
+        // Check if the user is logged in
         $currentUser = Auth::user();
         if (!$currentUser) {
             return response()->json([
@@ -172,7 +179,7 @@ class RoomController extends Controller
             ], Response::HTTP_UNAUTHORIZED);
         }
 
-        // Lấy phòng theo room_id
+        // Retrieve the room by room_id
         $room = Room::find($validated['room_id']);
         if (!$room) {
             return response()->json([
@@ -181,43 +188,59 @@ class RoomController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        // Kiểm tra quyền thêm người dùng
+        // Check permission to add users to the room based on the user's role
         if ($currentUser->role_id === 1) {
-            // Người có role_id = 1 có thể thêm người vào tất cả các phòng
-            return $this->addUserToRoom($currentUser, $room, $validated['email']);
+            // Users with role_id = 1 can add users to any room
+            foreach ($validated['emails'] as $email) {
+                $this->addUserToRoom($currentUser, $room, $email);
+            }
+            return response()->json([
+                'success' => true,
+                'message' => 'Users joined the room successfully',
+                'room' => $room,
+            ], Response::HTTP_OK);
         }
 
         if ($currentUser->role_id === 3) {
-            // Người có role_id = 3 chỉ có thể thêm người vào phòng mà họ là creator
+            // Users with role_id = 3 can only add users to rooms they created
             if ($room->creator_id !== $currentUser->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Only the creator of the room can add users to this room'
                 ], Response::HTTP_FORBIDDEN);
             }
-            return $this->addUserToRoom($currentUser, $room, $validated['email']);
+
+            foreach ($validated['emails'] as $email) {
+                $this->addUserToRoom($currentUser, $room, $email);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Users joined the room successfully',
+                'room' => $room,
+            ], Response::HTTP_OK);
         }
 
-        // Nếu role_id không phải 1 hoặc 3, không cho phép thêm người vào phòng
+        // If role_id is not 1 or 3, deny permission to add users
         return response()->json([
             'success' => false,
             'message' => 'You do not have permission to add users to this room'
         ], Response::HTTP_FORBIDDEN);
     }
 
-    private function addUserToRoom($currentUser, $room, $email)
+    public function addUserToRoom($currentUser, $room, $email)
     {
-        // Tìm người dùng dựa trên email
+        // Find the user by their email
         $user = User::where('email', $email)->first();
 
         if (!$user) {
             return response()->json([
                 'success' => false,
-                'message' => 'User not found'
+                'message' => 'User not found with email: ' . $email
             ], Response::HTTP_NOT_FOUND);
         }
 
-        // Kiểm tra xem người dùng đã tham gia phòng chưa
+        // Check if the user is already in the room
         $existingRoomUser = RoomUser::where('user_id', $user->id)
             ->where('room_id', $room->id)
             ->first();
@@ -225,11 +248,11 @@ class RoomController extends Controller
         if ($existingRoomUser) {
             return response()->json([
                 'success' => false,
-                'message' => 'User already in this room'
+                'message' => 'User ' . $email . ' is already in this room'
             ], Response::HTTP_CONFLICT);
         }
 
-        // Thêm người dùng vào phòng
+        // Add the user to the room
         RoomUser::create([
             'user_id' => $user->id,
             'room_id' => $room->id,
@@ -237,10 +260,14 @@ class RoomController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'User joined the room successfully',
+            'message' => 'User ' . $email . ' joined the room successfully',
             'room' => $room,
         ], Response::HTTP_OK);
     }
+
+
+    
+
 
 
     
