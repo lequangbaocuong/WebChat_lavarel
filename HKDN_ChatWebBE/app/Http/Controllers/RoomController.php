@@ -2,13 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\Room\AddUserToRoomRequest;
-use App\Http\Requests\Room\GetRoomUserRequest;
 use App\Models\Room;
 use App\Models\User;
 use App\Models\RoomUser;
-// use Illuminate\Http\Response;
-use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
@@ -55,17 +52,31 @@ class RoomController extends Controller
             ], 500);
         }
     }
+
+    public function show()
+    {
+        // Lấy danh sách tất cả các phòng
+        $rooms = Room::with('users')->get();
+
+        return response()->json([
+            'success' => true,
+            'rooms' => $rooms
+        ]);
+    }
+    
+    // Create room - Allowed for role_id 1 and 3
     public function create(CreateRoomRequest $request)
     {
-   
         $validated = $request->validated();
         $user = User::where('email', $validated['email'])->first();
-        if (!$user) {
+
+        if (!$user || !in_array($user->role_id, [1, 3])) {
             return response()->json([
                 'success' => false,
-                'message' => 'User not found'
-            ], Response::HTTP_NOT_FOUND);
+                'message' => 'Access denied. Only users with role_id 1 or 3 can create rooms.'
+            ], Response::HTTP_FORBIDDEN);
         }
+
         $room = Room::create([
             'name' => $validated['name'],
             'creator_id' => $user->id,
@@ -81,21 +92,135 @@ class RoomController extends Controller
         ], Response::HTTP_CREATED);
     }
 
-    public function joinroom(EntryRoomRequest $request)
+    public function update(Request $request, $room_id)
     {
-        // Dữ liệu đã được xác thực qua JoinRoomRequest
-        $validated = $request->validated();
+        $validated = $request->validate([
+            'email' => 'required|email|exists:users,email', // Validate email
+            'name' => 'nullable|string|max:255',
+        ]);
 
-        // Tìm người dùng dựa trên email
         $user = User::where('email', $validated['email'])->first();
 
-        // Tìm phòng theo room_id
-        $room = Room::find($validated['room_id']);
+        if (!$user || $user->role_id !== 1) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Access denied. Only users with role_id 1 can update rooms.'
+            ], Response::HTTP_FORBIDDEN);
+        }
 
-        // Kiểm tra nếu người dùng đã tham gia phòng
+        $room = Room::find($room_id);
+        if (!$room) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Room not found'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $room->update([
+            'name' => $validated['name'] ?? $room->name,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Room updated successfully',
+            'room' => $room
+        ]);
+    }
+
+    public function destroy(Request $request, $room_id)
+    {
+        $validated = $request->validate([
+            'email' => 'required|email|exists:users,email', // Validate email
+        ]);
+
+        $user = User::where('email', $validated['email'])->first();
+
+        if (!$user || $user->role_id !== 1) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Access denied. Only users with role_id 1 can delete rooms.'
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $room = Room::find($room_id);
+        if (!$room) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Room not found'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $room->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Room deleted successfully'
+        ]);
+    }
+
+    public function joinroom(EntryRoomRequest $request)
+    {
+        // Dữ liệu đã được xác thực qua EntryRoomRequest
+        $validated = $request->validated();
+
+        // Kiểm tra nếu người dùng đã đăng nhập
+        $currentUser = Auth::user();
+        if (!$currentUser) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You must be logged in to join a room'
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        // Lấy phòng theo room_id
+        $room = Room::find($validated['room_id']);
+        if (!$room) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Room not found'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        // Kiểm tra quyền thêm người dùng
+        if ($currentUser->role_id === 1) {
+            // Người có role_id = 1 có thể thêm người vào tất cả các phòng
+            return $this->addUserToRoom($currentUser, $room, $validated['email']);
+        }
+
+        if ($currentUser->role_id === 3) {
+            // Người có role_id = 3 chỉ có thể thêm người vào phòng mà họ là creator
+            if ($room->creator_id !== $currentUser->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only the creator of the room can add users to this room'
+                ], Response::HTTP_FORBIDDEN);
+            }
+            return $this->addUserToRoom($currentUser, $room, $validated['email']);
+        }
+
+        // Nếu role_id không phải 1 hoặc 3, không cho phép thêm người vào phòng
+        return response()->json([
+            'success' => false,
+            'message' => 'You do not have permission to add users to this room'
+        ], Response::HTTP_FORBIDDEN);
+    }
+
+    private function addUserToRoom($currentUser, $room, $email)
+    {
+        // Tìm người dùng dựa trên email
+        $user = User::where('email', $email)->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        // Kiểm tra xem người dùng đã tham gia phòng chưa
         $existingRoomUser = RoomUser::where('user_id', $user->id)
-                                    ->where('room_id', $room->id)
-                                    ->first();
+            ->where('room_id', $room->id)
+            ->first();
 
         if ($existingRoomUser) {
             return response()->json([
@@ -104,7 +229,7 @@ class RoomController extends Controller
             ], Response::HTTP_CONFLICT);
         }
 
-        // Thêm người dùng vào phòng (bảng trung gian table_room_users)
+        // Thêm người dùng vào phòng
         RoomUser::create([
             'user_id' => $user->id,
             'room_id' => $room->id,
@@ -116,6 +241,8 @@ class RoomController extends Controller
             'room' => $room,
         ], Response::HTTP_OK);
     }
+
+
     
     public function leaveRoom(LeaveRoomRequest $request)
     {
@@ -204,51 +331,5 @@ class RoomController extends Controller
             'success' => true,
             'message' => 'User removed from the room successfully',
         ], Response::HTTP_OK);
-    }
-
-    public function addUserToRoom(AddUserToRoomRequest $request) {
-        $field = $request->validated();
-
-        $room = Room::find($field['room_id']);
-        $emails = $field['emails'];
-        $exist = 0;
-
-        $users = [];
-        foreach ($emails as $email) {
-            $user = User::where('email', $email)->first();
-            $existingRoomUser = RoomUser::where('user_id', $user->id)
-                ->where('room_id', $room->id)
-                ->first();
-
-            if ($existingRoomUser) {
-                $exist++;
-                continue;
-            }
-
-            RoomUser::create([
-                'user_id' => $user->id,
-                'room_id' => $room->id,
-            ]);
-
-            $users[] = $user;
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Added successfully',
-            'users' => $users,
-        ], status: Response::HTTP_OK);
-    }
-
-    public function getRoomUser(GetRoomUserRequest $request) {
-        $field = $request->validated();
-
-        $users = User::whereHas('rooms', function ($query) use ($field) {
-                    $query->where('room_id', $field['room_id']);
-                })->get();
-
-        return response([
-            'users' => $users
-        ], 200);
     }
 }

@@ -1,38 +1,34 @@
 import React, { useState, useEffect } from "react";
 import { FiSearch, FiEdit2, FiTrash2, FiX, FiCheck, FiPlus } from "react-icons/fi";
 import { BiLoaderAlt } from "react-icons/bi";
+import { adduser, getuser, edituser, deleteuser } from "../../api.js"
 import axios from 'axios';
-
+import NotificationPopup from '../../NotificationPopup.jsx'
 const UserManagementDashboard = () => {
-  const [users, setUsers] = useState([
-    {
-      id: 1,
-      name: "Van Tien",
-      email: "john.doe@example.com",
-      role: "Admin",
-      phone: "0921899123",
-      address: "123 Main St, City, Country",
-      avatar: "images.unsplash.com/photo-1472099645785-5658abf4ff4e"
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      email: "jane.smith@example.com",
-      role: "User",
-      phone: "0921899123",
-      address: "456 Oak St, City, Country",
-      avatar: "images.unsplash.com/photo-1494790108377-be9c29b29330"
-    },
-    {
-      id: 3,
-      name: "Mike Johnson",
-      email: "mike.johnson@example.com",
-      role: "Morderate",
-      phone: "0921899123",
-      address: "789 Pine St, City, Country",
-      avatar: "images.unsplash.com/photo-1500648767791-00dcc994a43e"
+  const [users, setUsers] = useState([]);
+  const [notice, setNotice] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showNotification, setShowNotification] = useState(false);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await getuser();
+
+      setUsers(response);
+
+
+      setLoading(false);
+    } catch (err) {
+      setError("Không thể tải danh sách người dùng");
+      setLoading(false);
     }
-  ]);
+  };
+
+  useEffect(() => {
+    fetchUsers();
+
+  }, []);
   /////////////////////////////////////////////////////
   const [selectedUser, setSelectedUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -41,7 +37,7 @@ const UserManagementDashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
+    username: "",
     email: "",
     role: "",
     phone: "",
@@ -53,46 +49,60 @@ const UserManagementDashboard = () => {
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
 
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredUsers = users.filter(users =>
+
+    users.username?.toLowerCase().includes(searchQuery.toLowerCase())
+
+
   );
 
   const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
-  /////////////////////////////////////////////////////
-  const validateForm = () => {
-    const newErrors = {};
-    if (!formData.name) newErrors.name = "Name is required";
-    if (!formData.email) newErrors.email = "Email is required";
-    if (!formData.role) newErrors.role = "Role is required";
-    if (!formData.phone) newErrors.phone = "Phone is required";
-    if (!formData.address) newErrors.address = "Address is required";
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-  /////////////////////////////////////////////////////
-  const handleSubmit = (e) => {
+
+
+  const handleSubmit = async (e) => {
+
     e.preventDefault();
-    if (validateForm()) {
+
+    // if (!validateForm()) return;
+
+    try {
       setIsLoading(true);
-      setTimeout(() => {
-        if (selectedUser) {
-          setUsers(users.map(user =>
-            user.id === selectedUser.id ? { ...user, ...formData } : user
-          ));
-        } else {
-          setUsers([...users, { ...formData, id: users.length + 1, avatar: "images.unsplash.com/photo-1535713875002-d1d0cf377fde" }]);
-        }
-        setIsLoading(false);
+
+      let response;
+      if (selectedUser) {
+
+        // Cập nhật thông tin người dùng
+        response = await edituser(selectedUser.id, formData.username, formData.email, formData.role);
+
+      } else {
+
+        // Thêm mới người dùng
+        response = await adduser(formData.username, formData.email, formData.role);
+
+      }
+
+      if (response?.success) {
+
+        setIsModalOpen(false);
+        setShowNotification(true);
+        fetchUsers();
         setIsModalOpen(false);
         resetForm();
-      }, 1000);
+
+      } else {
+        console.error("Error:", response.data.message);
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
+
   /////////////////////////////////////////////////////
   const resetForm = () => {
     setFormData({
-      name: "",
+      username: "",
       email: "",
       role: "",
       phone: "",
@@ -107,40 +117,31 @@ const UserManagementDashboard = () => {
     setIsDeleteModalOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
+    const response = await deleteuser(selectedUser.id);
+    console.log(response.message);
     setIsLoading(true);
     setTimeout(() => {
-      setUsers(users.filter(user => user.id !== selectedUser.id));
       setIsDeleteModalOpen(false);
       setSelectedUser(null);
+      fetchUsers();
       setIsLoading(false);
     }, 1000);
   };
 
-  const handleEdit = (user) => {
-    setSelectedUser(user);
+  const handleEdit = (users) => {
+    setSelectedUser(users);
     setFormData({
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      phone: user.phone,
-      address: user.address
+      username: users.username,
+      email: users.email,
+      role: users.role.name,
+      phone: users.phone,
+      address: users.address
     });
     setIsModalOpen(true);
   };
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await axios.get('/api/admin/users'); // Adjust the endpoint to match your Laravel API
-        setUsers(response.data);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-      }
-    };
 
-    fetchUsers();
-  }, []);
   return (
     <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
@@ -178,16 +179,16 @@ const UserManagementDashboard = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {currentUsers.map((user) => (
+                {currentUsers.map((users) => (
                   <tr
-                    key={user.id}
-                    className={`hover:bg-gray-50 ${selectedUser?.id === user.id ? "bg-blue-50" : ""}`}
+                    key={users.id}
+                    className={`hover:bg-gray-50 ${selectedUser?.id === users.id ? "bg-blue-50" : ""}`}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <img
-                          src={`https://${user.avatar}`}
-                          alt={user.name}
+                          src={`https://`}
+                          alt={users.username}
                           className="h-10 w-10 rounded-full object-cover"
                           onError={(e) => {
                             e.target.onerror = null;
@@ -195,29 +196,29 @@ const UserManagementDashboard = () => {
                           }}
                         />
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                          <div className="text-sm text-gray-500">{user.email}</div>
+                          <div className="text-sm font-medium text-gray-900">{users.username}</div>
+                          <div className="text-sm text-gray-500">{users.email}</div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        {user.role}
+                        {users.role.name}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {user.phone}
+                      0921899124
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
-                        onClick={() => handleEdit(user)}
+                        onClick={() => handleEdit(users)}
                         className="text-blue-600 hover:text-blue-900 mr-4"
                         aria-label="Edit user"
                       >
                         <FiEdit2 className="h-5 w-5" />
                       </button>
                       <button
-                        onClick={() => handleDelete(user)}
+                        onClick={() => handleDelete(users)}
                         className="text-red-600 hover:text-red-900"
                         aria-label="Delete user"
                       >
@@ -272,11 +273,11 @@ const UserManagementDashboard = () => {
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Name</label>
+                <label className="block text-sm font-medium text-gray-700">Tên</label>
                 <input
                   type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                   className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${errors.name ? "border-red-500" : ""}`}
                 />
                 {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
@@ -298,9 +299,9 @@ const UserManagementDashboard = () => {
                   onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                   className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${errors.role ? "border-red-500" : ""}`}
                 >
-                  <option value="">Vai trò</option>
-                  <option value="User">User</option>
-                  <option value="Manager">Morderate</option>
+                  <option value={formData.role}>{formData.role}</option>
+                  <option value="2">User</option>
+                  <option value="3">Morderate</option>
                 </select>
                 {errors.role && <p className="mt-1 text-sm text-red-500">{errors.role}</p>}
               </div>
@@ -313,16 +314,6 @@ const UserManagementDashboard = () => {
                   className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${errors.phone ? "border-red-500" : ""}`}
                 />
                 {errors.phone && <p className="mt-1 text-sm text-red-500">{errors.phone}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Địa chỉ</label>
-                <textarea
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${errors.address ? "border-red-500" : ""}`}
-                  rows="3"
-                ></textarea>
-                {errors.address && <p className="mt-1 text-sm text-red-500">{errors.address}</p>}
               </div>
               <div className="flex justify-end space-x-3">
                 <button
@@ -392,6 +383,7 @@ const UserManagementDashboard = () => {
           </div>
         </div>
       )}
+      {showNotification && (<NotificationPopup />)}
     </div>
   );
 };

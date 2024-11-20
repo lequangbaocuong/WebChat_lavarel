@@ -1,67 +1,105 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FiEdit2, FiTrash2, FiPlus, FiSearch } from "react-icons/fi";
+import { getuser, addroom, getroom, editroom, deleteroom } from "../../api.js"
+import { use } from "framer-motion/client";
 
 const ChatRoomManagement = () => {
-  const [rooms, setRooms] = useState([
-    {
-      id: 1,
-      name: "Product Development",
-      avatar: "images.unsplash.com/photo-1522071820081-009f0129c71c",
-      creator: "John Doe",
-      createdAt: "2024-01-15T10:30:00"
-    },
-    {
-      id: 2,
-      name: "Marketing Team",
-      avatar: "images.unsplash.com/photo-1522075469751-3a6694fb2f61",
-      creator: "Jane Smith",
-      createdAt: "2024-01-14T15:45:00"
-    },
-    {
-      id: 3,
-      name: "Design Squad",
-      avatar: "images.unsplash.com/photo-1524758631624-e2822e304c36",
-      creator: "Mike Wilson",
-      createdAt: "2024-01-13T09:15:00"
-    }
-  ]);
+  const [rooms, setRooms] = useState([]);
+  const [roomData, setRoomData] = useState({
+    id: "",
+    name: "",
+    avatar: "images.unsplash.com/photo-1522071820081-009f0129c71c",
+    creator: "",
+    createdAt: "",
+
+  });
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentRoom, setCurrentRoom] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [errors, setErrors] = useState({});
+  const [users, setUsers] = useState([]);
   const [newRoom, setNewRoom] = useState({
     name: "",
-    creator: ""
+    email: localStorage.getItem("email"),
+    user_id: localStorage.getItem("user_id"),
   });
 
-  const filteredRooms = rooms.filter(room =>
-    room.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const fetchRoom = async () => {
+    try {
+      const response = await getroom();
+      console.log(response.rooms);
+      setRooms(response.rooms);
+      setLoading(false);
+    } catch (err) {
+      setErrors("Không thể tải danh sách người dùng");
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+
+    fetchRoom();
+
+  }, []);
+
+
+
+
+
+  const filteredRooms = rooms.filter(rooms =>
+    rooms.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleAddRoom = () => {
-    const room = {
-      id: rooms.length + 1,
-      ...newRoom,
-      avatar: "images.unsplash.com/photo-1517245386807-bb43f82c33c4",
-      createdAt: new Date().toISOString()
-    };
-    setRooms([...rooms, room]);
-    setNewRoom({ name: "", creator: "" });
-    setIsAddModalOpen(false);
+  const handleAddRoom = async () => {
+    try {
+      const response = await addroom(newRoom.email, newRoom.name, newRoom.user_id);
+      if (response.success) {
+        setRooms([...rooms, response.room]);
+        setNewRoom({ name: "", creator_id: localStorage.getItem("email") });
+        setIsAddModalOpen(false);
+        fetchRoom();
+      } else {
+        setErrors(response.message || "Thêm phòng thất bại");
+      }
+    } catch (err) {
+      setErrors("Lỗi khi thêm phòng");
+    }
   };
 
-  const handleEditRoom = () => {
-    const updatedRooms = rooms.map(room =>
-      room.id === currentRoom.id ? { ...currentRoom } : room
-    );
-    setRooms(updatedRooms);
-    setIsEditModalOpen(false);
-    setCurrentRoom(null);
+  const handleEditRoom = async () => {
+    try {
+      const response = await editroom(currentRoom.id, currentRoom.name);
+      if (response.success) {
+        // Cập nhật danh sách phòng
+        setRooms((prevRooms) =>
+          prevRooms.map((room) =>
+            room.id === currentRoom.id ? { ...room, ...currentRoom } : room
+          )
+        );
+        setIsEditModalOpen(false);
+        setCurrentRoom(null);
+      } else {
+        setErrors(response.message || "Cập nhật phòng thất bại");
+      }
+    } catch (err) {
+      setErrors("Lỗi khi cập nhật phòng");
+    }
   };
 
-  const handleDeleteRoom = (id) => {
-    setRooms(rooms.filter(room => room.id !== id));
+  const handleDeleteRoom = async (id) => {
+    try {
+      const response = await deleteroom(id);
+      if (response.success) {
+        // Xóa phòng khỏi danh sách
+        setRooms((prevRooms) => prevRooms.filter((room) => room.id !== id));
+      } else {
+        setErrors(response.message || "Xóa phòng thất bại");
+      }
+    } catch (err) {
+      setErrors("Lỗi khi xóa phòng");
+    }
   };
 
   return (
@@ -111,7 +149,7 @@ const ChatRoomManagement = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{room.name}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <img
-                    src={`https://${room.avatar}`}
+                    src={room.avatar}
                     alt={`${room.name} avatar`}
                     className="h-10 w-10 rounded-full object-cover"
                     onError={(e) => {
@@ -119,18 +157,18 @@ const ChatRoomManagement = () => {
                     }}
                   />
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{room.creator}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{room.users && room.users[0] ? room.users[0].username : "Chưa có người dùng"}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {new Date(room.createdAt).toLocaleDateString()}
+                  {new Date(room.created_at).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button
                     onClick={() => {
-                      setCurrentRoom(room);
+                      setCurrentRoom(roomData);
                       setIsEditModalOpen(true);
                     }}
                     className="text-blue-600 hover:text-blue-900 mr-4"
-                    aria-label={`Edit ${room.name}`}
+                    aria-label={`Edit ${roomData.name}`}
                   >
                     <FiEdit2 className="w-5 h-5" />
                   </button>

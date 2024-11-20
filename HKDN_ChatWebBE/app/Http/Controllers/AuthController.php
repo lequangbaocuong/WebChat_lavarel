@@ -9,6 +9,7 @@ use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
 use App\Models\User;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -77,7 +78,7 @@ class AuthController extends Controller
 
         // Tạo token đăng nhập cho người dùng
         $token = $user->createToken('login_token')->plainTextToken;
-
+       
         return response()->json([
             'success' => true,
             'message' => 'Login successful',

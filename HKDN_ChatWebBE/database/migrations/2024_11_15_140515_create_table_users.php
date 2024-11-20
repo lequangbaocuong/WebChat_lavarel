@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('password');
             $table->string('profile_img_path')->nullable();
-            $table->unsignedBigInteger('role_id')->nullable(); // Cột 'creator_id' là khóa ngoại
+            $table->unsignedBigInteger('role_id')->nullable()->default('2');; // Cột 'creator_id' là khóa ngoại
             $table->foreign('role_id')->references('id')->on('role')->onDelete('cascade');
             $table->timestamps();
             $table->timestamp('email_verified_at')->nullable();

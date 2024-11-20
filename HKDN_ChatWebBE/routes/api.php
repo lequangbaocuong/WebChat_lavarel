@@ -65,11 +65,14 @@ Route::get('/room/user', [RoomController::class, 'getRoomUser']);
 Route::post('/add-user-to-room', [RoomController::class, 'addUserToRoom']);
 Route::get('/find-user', [UserController::class, 'find']);
 
-Route::prefix('users')->middleware('auth:sanctum')->group(function() {
+Route::prefix('admin')->middleware('auth:sanctum')->group(function() {
     Route::get('/', [UserController::class, 'index']);        // List users
-    Route::post('/', [UserController::class, 'store']);       // Add user
-    Route::put('/{id}', [UserController::class, 'update']);   // Edit user
-    Route::delete('/{id}', [UserController::class, 'destroy']); // Delete user
+    Route::post('/adduser', [UserController::class, 'store']);       // Add user
+    Route::put('/edituser/{id}', [UserController::class, 'update']);   // Edit user
+    Route::delete('/deleteuser/{id}', [UserController::class, 'destroy']); // Delete user
+    Route::get('/showrooms', [RoomController::class, 'show']);
+    Route::post('/addroom', [RoomController::class, 'create']);
+    Route::put('/editroom/{room_id}', [RoomController::class, 'update']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
