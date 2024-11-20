@@ -91,3 +91,4 @@ Route::middleware('auth:sanctum')->group(function () {
  Route::post('/admin-reset', [UserController::class, 'resetPassword']);
  
  Route::post('/user/profile', [UserController::class, 'getProfile']);
+ Route::post('/user/update', [UserController::class, 'updateprofile']);
