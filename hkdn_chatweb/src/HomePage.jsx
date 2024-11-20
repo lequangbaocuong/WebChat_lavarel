@@ -193,6 +193,7 @@ const HomePage = () => {
         }
     };
     
+    
     useEffect(() => {
         if (selectedRoom) {
             fetchMessages(selectedRoom.id);  // Lấy tin nhắn từ server
@@ -201,12 +202,12 @@ const HomePage = () => {
     
     
     const handleSendMessage = async () => {
-        if (!selectedRoom || !messageInput.trim()) return;
+        if (!selectedChat || !messageInput.trim()) return;
     
         const token = localStorage.getItem("auth_token");
         try {
             const response = await axios.post(
-                `http://localhost:8000/api/rooms/${selectedRoom.id}/messages`,
+                `http://localhost:8000/api/rooms/${selectedChat.id}/messages`,
                 { content: messageInput },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -219,6 +220,7 @@ const HomePage = () => {
             console.error("Error sending message:", error.response?.data || error);
         }
     };
+    
     
 
     function addRoomUsers(newUsers) {
@@ -396,7 +398,7 @@ const HomePage = () => {
                                 type="text"
                                 value={messageInput}
                                 onChange={(e) => setMessageInput(e.target.value)}
-                                onKeyPress={(e) => {
+                                onKeyUp={(e) => {
                                     if (e.key === "Enter") handleSendMessage(); // Send message on Enter key
                                 }}
                                 placeholder="Gửi tin nhắn"
@@ -404,7 +406,7 @@ const HomePage = () => {
                             />
                             <button
                                 onClick={handleSendMessage}
-                                disabled={!messageInput} // Disable button if input is empty
+                                disabled={!messageInput.trim()} // Ensure messageInput is non-empty before enabling
                                 className="ml-4 text-blue-500 hover:text-blue-600"
                             >
                                 <IoMdSend size={24} />
