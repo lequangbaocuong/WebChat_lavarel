@@ -7,6 +7,9 @@ import { BiLoaderAlt } from "react-icons/bi";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import RegistrationSuccess from './Component/RegistrationSuccess';
+
+
+
 const ResetPassPage = () => {
     const navigate = useNavigate();
     const [password, setPassword] = useState("");

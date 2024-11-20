@@ -29,8 +29,9 @@ class UserController extends Controller
 
         return response()->json([
             'name' => $user->username,
-            'phone' => $user->google_id,
+            'phone' => $user->phone,
             'email' => $user->email,
+            'avatar'=>$user->avatar,
         ]);
     }
     public function find(FindUserRequest $request) {
@@ -91,6 +92,37 @@ class UserController extends Controller
     }
 
     // Edit user - Only allowed for role_id = 1
+
+
+    public function changePassword(Request $request)
+    {
+        // Validate input
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'old_password' => 'required',
+            'new_password' => 'required|min:8|confirmed', // new_password_confirmation phải được gửi kèm
+        ]);
+
+        // Find user by email
+        $user = User::where('email', $request->email)->first();
+
+        // Check if the old password is correct
+        if (!Hash::check($request->old_password, $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mật khẩu cũ không đúng.'
+            ], 400);
+        }
+
+        // Update password
+        $user->password = Hash::make($request->new_password);
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đổi mật khẩu thành công.'
+        ]);
+    }
     public function update(Request $request, $id)
     {
         if (Auth::user()->role_id !== 1) {
@@ -115,7 +147,7 @@ class UserController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json(['success'=>true,'errors' => $validator->errors()], 422);
         }
 
         // Update the user
@@ -220,5 +252,52 @@ class UserController extends Controller
         Mail::to($email)->send(new VerificationCodeMail($newPassword));
 
         return response()->json(['success' => true, 'message' => 'Mật khẩu mới đã được gửi đến email của bạn']);
+    }
+
+    public function updateprofile(Request $request)
+    {
+        // Validate đầu vào
+        $validatedData = $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'username' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'avatar' => 'nullable|string', // Avatar dưới dạng base64
+        ]);
+
+        try {
+            // Tìm người dùng bằng email
+            $user = User::where('email', $validatedData['email'])->first();
+
+            if (!$user) {
+                return response()->json(['message' => 'Người dùng không tồn tại'], 404);
+            }
+
+            // Cập nhật thông tin người dùng
+            if (isset($validatedData['username'])) {
+                $user->username = $validatedData['username'];
+            }
+
+            if (isset($validatedData['phone'])) {
+                $user->phone = $validatedData['phone'];
+            }
+
+            if (isset($validatedData['avatar'])) {
+                $user->avatar = $validatedData['avatar']; // Lưu chuỗi base64
+            }
+
+            $user->save();
+
+            return response()->json([
+                'message' => 'Cập nhật thông tin thành công',
+                'user' => [
+                    'username' => $user->username,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'avatar' => $user->avatar, // Trả về chuỗi base64
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Đã xảy ra lỗi khi cập nhật thông tin', 'error' => $e->getMessage()], 500);
+        }
     }
 }

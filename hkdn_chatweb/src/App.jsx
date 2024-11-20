@@ -40,7 +40,7 @@ const App = () => {
         <Route path="/admin/forgot-password" element={<ForgotPassword />} />
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
-          <Route path="change-password" element={<ChangePassword />} />
+          <Route path="changepass" element={<ChangePassword />} />
           {/* Quản lý Người Dùng */}
           <Route path="users">
             <Route index element={<UsersList />} />

@@ -75,7 +75,11 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function() {
     Route::get('/showrooms', [RoomController::class, 'show']);
     Route::post('/addroom', [RoomController::class, 'create']);
     Route::put('/editroom/{room_id}', [RoomController::class, 'update']);
+    Route::delete('/deleteroom/{room_id}', [RoomController::class, 'destroy']);
+    Route::post('/change-password', [UserController::class, 'changePassword']);
+ 
 });
+
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/rooms/{roomId}/messages', [MessageController::class, 'getMessages']);
@@ -89,3 +93,4 @@ Route::middleware('auth:sanctum')->group(function () {
  Route::post('/admin-reset', [UserController::class, 'resetPassword']);
  
  Route::post('/user/profile', [UserController::class, 'getProfile']);
+ Route::post('/user/update', [UserController::class, 'updateprofile']);
