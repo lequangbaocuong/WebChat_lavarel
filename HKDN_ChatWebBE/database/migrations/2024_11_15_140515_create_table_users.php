@@ -22,6 +22,8 @@ return new class extends Migration
             $table->rememberToken();
             $table->string('otp', 6)->nullable()->default(null); // Thêm cột otp
             $table->string('status')->default('active'); // Thêm cột status
+            $table->string('avatar')->nullable()->default("user.png");
+            $table->string('phone')->nullable()->default(null);
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

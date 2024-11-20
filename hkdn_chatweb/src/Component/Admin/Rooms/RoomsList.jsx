@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { FiEdit2, FiTrash2, FiPlus, FiSearch } from "react-icons/fi";
+import { BiLoaderAlt } from "react-icons/bi";
 import { getuser, addroom, getroom, editroom, deleteroom } from "../../api.js"
 import { use } from "framer-motion/client";
 
@@ -17,10 +18,12 @@ const ChatRoomManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [currentRoom, setCurrentRoom] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState({});
   const [users, setUsers] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [newRoom, setNewRoom] = useState({
     name: "",
     email: localStorage.getItem("email"),
@@ -70,30 +73,25 @@ const ChatRoomManagement = () => {
 
   const handleEditRoom = async () => {
     try {
-      const response = await editroom(currentRoom.id, currentRoom.name);
+      const response = await editroom(currentRoom.id, currentRoom.name, localStorage.getItem("email"));
       if (response.success) {
-        // Cập nhật danh sách phòng
-        setRooms((prevRooms) =>
-          prevRooms.map((room) =>
-            room.id === currentRoom.id ? { ...room, ...currentRoom } : room
-          )
-        );
+
         setIsEditModalOpen(false);
-        setCurrentRoom(null);
+        fetchRoom();
       } else {
-        setErrors(response.message || "Cập nhật phòng thất bại");
+        setErrors(response.message || "Thêm phòng thất bại");
       }
     } catch (err) {
       setErrors("Lỗi khi cập nhật phòng");
     }
   };
 
-  const handleDeleteRoom = async (id) => {
+  const handleDeleteRoom = async () => {
     try {
-      const response = await deleteroom(id);
+      const response = await deleteroom(currentRoom.id, localStorage.getItem("email"));
       if (response.success) {
-        // Xóa phòng khỏi danh sách
-        setRooms((prevRooms) => prevRooms.filter((room) => room.id !== id));
+        setIsDeleteModalOpen(false);
+        fetchRoom();
       } else {
         setErrors(response.message || "Xóa phòng thất bại");
       }
@@ -149,7 +147,7 @@ const ChatRoomManagement = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{room.name}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <img
-                    src={room.avatar}
+                    src={`/${room.avatar}`}
                     alt={`${room.name} avatar`}
                     className="h-10 w-10 rounded-full object-cover"
                     onError={(e) => {
@@ -164,16 +162,19 @@ const ChatRoomManagement = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button
                     onClick={() => {
-                      setCurrentRoom(roomData);
+                      setCurrentRoom(room);
                       setIsEditModalOpen(true);
                     }}
                     className="text-blue-600 hover:text-blue-900 mr-4"
-                    aria-label={`Edit ${roomData.name}`}
+                    aria-label={`Edit ${room.name}`}
                   >
                     <FiEdit2 className="w-5 h-5" />
                   </button>
                   <button
-                    onClick={() => handleDeleteRoom(room.id)}
+                    onClick={() => {
+                      setCurrentRoom(room);
+                      setIsDeleteModalOpen(true);
+                    }}
                     className="text-red-600 hover:text-red-900"
                     aria-label={`Delete ${room.name}`}
                   >
@@ -224,14 +225,13 @@ const ChatRoomManagement = () => {
             <h2 className="text-xl font-bold mb-4">Sửa</h2>
             <input
               type="text"
-              placeholder="Room Name"
+              placeholder="Tên phòng"
               value={currentRoom.name}
               onChange={(e) =>
                 setCurrentRoom({ ...currentRoom, name: e.target.value })
               }
               className="w-full mb-4 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-
             <div className="flex justify-end gap-4">
               <button
                 onClick={() => setIsEditModalOpen(false)}
@@ -244,6 +244,42 @@ const ChatRoomManagement = () => {
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
                 Lưu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h2 className="text-xl font-bold mb-4">Xác nhận xóa</h2>
+            <p className="text-gray-700 mb-6">
+              Bạn có muốn xóa phòng {currentRoom?.name}? Hành động này không thể quay lại.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+              >
+                Thoát
+              </button>
+              <button
+                onClick={handleDeleteRoom}
+                disabled={isLoading}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                {isLoading ? (
+                  <>
+                    <BiLoaderAlt className="animate-spin mr-2" />
+                    Đang xóa...
+                  </>
+                ) : (
+                  <>
+                    <FiTrash2 className="mr-2" />
+                    Xóa
+                  </>
+                )}
               </button>
             </div>
           </div>
