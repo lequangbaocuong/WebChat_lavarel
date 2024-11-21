@@ -305,7 +305,7 @@ const HomePage = () => {
                         >
                             <div className="relative">
                                 <img
-                                    src="https://cdn4.iconfinder.com/data/icons/social-media-3/512/User_Group-512.png"
+                                    src={group.avatar}
                                     // src={group.avatar}
                                     alt={group.name}
                                     className="w-12 h-12 rounded-full object-cover"
@@ -337,7 +337,7 @@ const HomePage = () => {
                         <div className="p-4 bg-white border-b border-gray-200 flex items-center justify-between relative">
                             <div className="flex items-center">
                                 <img
-                                    src="https://cdn4.iconfinder.com/data/icons/social-media-3/512/User_Group-512.png"
+                                    src={selectedChat.avatar}
                                     // src={selectedChat.avatar}
                                     alt={selectedChat.name}
                                     className="w-10 h-10 rounded-full object-cover"
