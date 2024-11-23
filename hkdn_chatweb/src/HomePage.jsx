@@ -44,6 +44,12 @@ const HomePage = () => {
         phoneNumber: "+84 123 456 789",
         avatar: "https://inkythuatso.com/uploads/thumbnails/800/2023/03/6-anh-dai-dien-trang-inkythuatso-03-15-26-36.jpg",
     };
+    const currentUserId = localStorage.getItem("user_id"); // Lấy user_id từ localStorage
+    useEffect(() => {
+        console.log("Current User ID:", currentUserId);
+        console.log("Messages:", messages);
+    }, [messages]); // Kiểm tra mỗi khi messages thay đổi
+
 
 
     useEffect(() => {
@@ -174,24 +180,26 @@ const HomePage = () => {
     const fetchMessages = async (roomId) => {
         try {
             const token = localStorage.getItem("auth_token");
-    
             if (!token) {
-                throw new Error('No authentication token found');
+                throw new Error("No authentication token found");
             }
     
             const response = await axios.get(`http://localhost:8000/api/rooms/${roomId}/messages`, {
                 headers: {
-                    'Authorization': `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
             });
     
             if (response.data.success) {
-                setMessages(response.data.messages);  // Lưu tin nhắn vào state
+                setMessages(
+                    response.data.messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+                ); // Sort by timestamp
             }
         } catch (error) {
-            console.error('Error fetching messages:', error.message);
+            console.error("Error fetching messages:", error.message);
         }
     };
+    
     
     
     useEffect(() => {
@@ -211,6 +219,8 @@ const HomePage = () => {
                 { content: messageInput },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
+    
+            console.log(response.data); // Kiểm tra dữ liệu phản hồi
     
             if (response.data.success) {
                 setMessages((prevMessages) => [...prevMessages, response.data.data]);  // Thêm tin nhắn mới vào state
@@ -368,27 +378,36 @@ const HomePage = () => {
                         </div>
 
                         {/* Display Messages */}
-                        <div className="flex-1 overflow-y-auto p-4">
-                            {messages.length > 0 ? (
-                                messages.map((msg) => (
+                        <div className="flex-1 flex flex-col pt-20">
+                            <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+                            {messages.map((message) => {
+                                 const currentUserId = localStorage.getItem("user_id");
+                                 console.log("Current User ID from localStorage:", currentUserId);  // Check if it's correct
+                                 const isCurrentUser = Number(message.user_id) === Number(currentUserId);  // Make sure you're comparing numbers
+                             
+                                 console.log("Is current user:", isCurrentUser);  // Check if condition is applied correctly
+
+                                return (
                                     <div
-                                        key={msg.id}
-                                        className={`flex ${msg.user.id === currentUser.id ? "justify-end" : "justify-start"} mb-4`}
+                                        key={message.id}
+                                        className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-4`}
                                     >
                                         <div
-                                            className={`p-3 rounded-lg max-w-xs ${msg.user.id === currentUser.id ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-900"}`}
+                                            className={`max-w-[70%] rounded-lg p-3 ${isCurrentUser ? 'bg-indigo-600 text-white' : 'bg-white text-gray-900'} shadow-sm`}
                                         >
-                                            <p>{msg.content}</p>
-                                            <div className="text-xs text-gray-500 mt-1 flex items-center">
-                                                {new Date(msg.created_at).toLocaleTimeString()} {/* Hiển thị thời gian gửi tin */}
-                                            </div>
+                                            <p>{message.content}</p>
+                                            <p className={`text-xs mt-1 ${isCurrentUser ? 'text-indigo-200' : 'text-gray-500'}`}>
+                                                {new Date(message.created_at).toLocaleTimeString()}
+                                            </p>
                                         </div>
                                     </div>
-                                ))
-                            ) : (
-                                <p>No messages yet</p> // Hiển thị khi không có tin nhắn nào
-                            )}
+                                    );
+                                })}
+                            </div>
                         </div>
+
+
+
 
                         {/* Input for Sending Messages */}
                         <div className="p-4 bg-white border-t border-gray-200 flex items-center">
