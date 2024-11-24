@@ -43,6 +43,7 @@ const LoginPage = () => {
           setTimeout(() => {
             localStorage.setItem('user_email', response.data.email);
             localStorage.setItem('auth_token', response.data.access_token);
+            localStorage.setItem("user_id", response.data.id); // Store the current user's ID on login
             navigate('/home');
           }, 3000);
         } else {
