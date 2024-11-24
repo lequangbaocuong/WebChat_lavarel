@@ -23,7 +23,7 @@ const HomePage = () => {
     const avatarMenuRef = useRef(null);
     const sidebarMenuRef = useRef(null);
     const [showSidebarMenu, setShowSidebarMenu] = useState(false);
-
+    const messagesEndRef = useRef(null);
     const [showNewGroupModal, setShowNewGroupModal] = useState(false);
     const [error, setError] = useState("");
     const [newGroupData, setNewGroupData] = useState({ name: "", description: "" });
@@ -88,12 +88,13 @@ const HomePage = () => {
         };
     }, []);
 
-    
+
     useEffect(() => {
         if (selectedRoom) {
             fetchMessages(selectedRoom);
             fetchRoomUser();
         }
+
     }, [selectedRoom]);
 
     const handleKeyPress = (e) => {
@@ -169,12 +170,12 @@ const HomePage = () => {
                 Authorization: `Bearer ${token}`,  // Đảm bảo bạn có token nếu cần
             }
         })
-        .then(response => {
-            console.log("Users in room:", response.data);
-        })
-        .catch(error => {
-            console.error("Error fetching users in room:", error);
-        });
+            .then(response => {
+                console.log("Users in room:", response.data);
+            })
+            .catch(error => {
+                console.error("Error fetching users in room:", error);
+            });
     }
 
     const fetchMessages = async (roomId) => {
@@ -183,13 +184,13 @@ const HomePage = () => {
             if (!token) {
                 throw new Error("No authentication token found");
             }
-    
+
             const response = await axios.get(`http://localhost:8000/api/rooms/${roomId}/messages`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
-    
+
             if (response.data.success) {
                 setMessages(
                     response.data.messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
@@ -199,19 +200,19 @@ const HomePage = () => {
             console.error("Error fetching messages:", error.message);
         }
     };
-    
-    
-    
+
+
+
     useEffect(() => {
         if (selectedRoom) {
             fetchMessages(selectedRoom.id);  // Lấy tin nhắn từ server
         }
     }, [selectedRoom]);
-    
-    
+
+
     const handleSendMessage = async () => {
         if (!selectedChat || !messageInput.trim()) return;
-    
+
         const token = localStorage.getItem("auth_token");
         try {
             const response = await axios.post(
@@ -219,23 +220,26 @@ const HomePage = () => {
                 { content: messageInput },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-    
+
             console.log(response.data); // Kiểm tra dữ liệu phản hồi
-    
+
             if (response.data.success) {
                 setMessages((prevMessages) => [...prevMessages, response.data.data]);  // Thêm tin nhắn mới vào state
                 setMessageInput("");
             }
+
+
+
         } catch (error) {
             console.error("Error sending message:", error.response?.data || error);
         }
     };
-    
-    
+
+
 
     function addRoomUsers(newUsers) {
         newUsers = newUsers || []; // Fallback to an empty array if newUsers is undefined or null
-    
+
         if (Array.isArray(newUsers)) {
             newUsers.forEach(user => {
                 // Add the user to the room (your existing logic)
@@ -281,7 +285,7 @@ const HomePage = () => {
     return (
         <div className="flex h-full">
             <SidebarIcons setShowProfilePage={setShowProfilePage} ></SidebarIcons>
-            <div className="w-1/4 bg-white border-r border-gray-200 relative">
+            <div className="w-1/4 bg-white border-r border-gray-200 relative ">
                 <div className="p-4 border-b border-gray-200 mb-2">
                     <div className="flex items-center justify-between mb-4">
                         <h1 className="text-xl font-semibold">Tin nhắn</h1>
@@ -338,17 +342,17 @@ const HomePage = () => {
             </div>
 
             {/* Main Chat */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col  h-screen">
                 {/* Show Profile Component */}
                 {showProfilePage ? (
                     <Profile closeProfile={closeProfilePage} />
                 ) : selectedChat ? (
                     <>
+                        {/* Chat Header */}
                         <div className="p-4 bg-white border-b border-gray-200 flex items-center justify-between relative">
                             <div className="flex items-center">
                                 <img
                                     src={selectedChat.avatar}
-                                    // src={selectedChat.avatar}
                                     alt={selectedChat.name}
                                     className="w-10 h-10 rounded-full object-cover"
                                 />
@@ -378,36 +382,34 @@ const HomePage = () => {
                         </div>
 
                         {/* Display Messages */}
-                        <div className="flex-1 flex flex-col pt-20">
-                            <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
-                            {messages.map((message) => {
-                                 const currentUserId = localStorage.getItem("user_id");
-                                 console.log("Current User ID from localStorage:", currentUserId);  // Check if it's correct
-                                 const isCurrentUser = Number(message.user_id) === Number(currentUserId);  // Make sure you're comparing numbers
-                             
-                                 console.log("Is current user:", isCurrentUser);  // Check if condition is applied correctly
+                        <div className="flex-1 flex flex-col overflow-y-auto pl-4 bg-gray-50">
+                            <div
+                                className="flex-1 p-4 overflow-y-auto space-y-4"
 
-                                return (
-                                    <div
-                                        key={message.id}
-                                        className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-4`}
-                                    >
+                            >
+                                {messages.map((message) => {
+                                    const currentUserId = localStorage.getItem("user_id");
+                                    const isCurrentUser = Number(message.user_id) === Number(currentUserId);
+
+                                    return (
                                         <div
-                                            className={`max-w-[70%] rounded-lg p-3 ${isCurrentUser ? 'bg-indigo-600 text-white' : 'bg-white text-gray-900'} shadow-sm`}
+                                            key={message.id}
+                                            className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-4`}
                                         >
-                                            <p>{message.content}</p>
-                                            <p className={`text-xs mt-1 ${isCurrentUser ? 'text-indigo-200' : 'text-gray-500'}`}>
-                                                {new Date(message.created_at).toLocaleTimeString()}
-                                            </p>
+                                            <div
+                                                className={`max-w-[70%] rounded-lg p-3 ${isCurrentUser ? 'bg-indigo-600 text-white' : 'bg-white text-gray-900'} shadow-sm`}
+                                            >
+                                                <p>{message.content}</p>
+                                                <p className={`text-xs mt-1 ${isCurrentUser ? 'text-indigo-200' : 'text-gray-500'}`}>
+                                                    {new Date(message.created_at).toLocaleTimeString()}
+                                                </p>
+                                            </div>
                                         </div>
-                                    </div>
                                     );
                                 })}
+                                <div ref={messagesEndRef} />
                             </div>
                         </div>
-
-
-
 
                         {/* Input for Sending Messages */}
                         <div className="p-4 bg-white border-t border-gray-200 flex items-center">
@@ -418,14 +420,14 @@ const HomePage = () => {
                                 value={messageInput}
                                 onChange={(e) => setMessageInput(e.target.value)}
                                 onKeyUp={(e) => {
-                                    if (e.key === "Enter") handleSendMessage(); // Send message on Enter key
+                                    if (e.key === "Enter") handleSendMessage();
                                 }}
                                 placeholder="Gửi tin nhắn"
                                 className="flex-1 px-4 py-2 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                             <button
                                 onClick={handleSendMessage}
-                                disabled={!messageInput.trim()} // Ensure messageInput is non-empty before enabling
+                                disabled={!messageInput.trim()}
                                 className="ml-4 text-blue-500 hover:text-blue-600"
                             >
                                 <IoMdSend size={24} />
@@ -436,6 +438,7 @@ const HomePage = () => {
                     <IntroPage />
                 )}
             </div>
+
             {/* Profile */}
             {showProfileModal && profileData && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-20">
