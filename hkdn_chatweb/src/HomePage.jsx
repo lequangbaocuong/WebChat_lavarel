@@ -33,7 +33,7 @@ const HomePage = () => {
     const avatarMenuRef = useRef(null);
     const sidebarMenuRef = useRef(null);
     const [showSidebarMenu, setShowSidebarMenu] = useState(false);
-
+    const messagesEndRef = useRef(null);
     const [showNewGroupModal, setShowNewGroupModal] = useState(false);
     const [error, setError] = useState("");
     const [newGroupData, setNewGroupData] = useState({ name: "", description: "" });
@@ -98,12 +98,13 @@ const HomePage = () => {
         };
     }, []);
 
-    
+
     useEffect(() => {
         if (selectedRoom) {
             fetchMessages(selectedRoom);
             fetchRoomUser();
         }
+
     }, [selectedRoom]);
 
     const handleKeyPress = (e) => {
@@ -179,12 +180,12 @@ const HomePage = () => {
                 Authorization: `Bearer ${token}`,  // Đảm bảo bạn có token nếu cần
             }
         })
-        .then(response => {
-            console.log("Users in room:", response.data);
-        })
-        .catch(error => {
-            console.error("Error fetching users in room:", error);
-        });
+            .then(response => {
+                console.log("Users in room:", response.data);
+            })
+            .catch(error => {
+                console.error("Error fetching users in room:", error);
+            });
     }
 
         const fetchMessages = async (roomId) => {
@@ -220,11 +221,11 @@ const HomePage = () => {
             fetchMessages(selectedRoom.id);  // Lấy tin nhắn từ server
         }
     }, [selectedRoom]);
-    
-    
+
+
     const handleSendMessage = async () => {
         if (!selectedChat || !messageInput.trim()) return;
-    
+
         const token = localStorage.getItem("auth_token");
         try {
             const response = await axios.post(
@@ -232,23 +233,26 @@ const HomePage = () => {
                 { content: messageInput },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-    
+
             console.log(response.data); // Kiểm tra dữ liệu phản hồi
-    
+
             if (response.data.success) {
                 setMessages((prevMessages) => [...prevMessages, response.data.data]);  // Thêm tin nhắn mới vào state
                 setMessageInput("");
             }
+
+
+
         } catch (error) {
             console.error("Error sending message:", error.response?.data || error);
         }
     };
-    
-    
+
+
 
     function addRoomUsers(newUsers) {
         newUsers = newUsers || []; // Fallback to an empty array if newUsers is undefined or null
-    
+
         if (Array.isArray(newUsers)) {
             newUsers.forEach(user => {
                 // Add the user to the room (your existing logic)
@@ -354,7 +358,7 @@ const HomePage = () => {
     return (
         <div className="flex h-full">
             <SidebarIcons setShowProfilePage={setShowProfilePage} ></SidebarIcons>
-            <div className="w-1/4 bg-white border-r border-gray-200 relative">
+            <div className="w-1/4 bg-white border-r border-gray-200 relative ">
                 <div className="p-4 border-b border-gray-200 mb-2">
                     <div className="flex items-center justify-between mb-4">
                         <h1 className="text-xl font-semibold">Tin nhắn</h1>
@@ -411,17 +415,17 @@ const HomePage = () => {
             </div>
 
             {/* Main Chat */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col  h-screen">
                 {/* Show Profile Component */}
                 {showProfilePage ? (
                     <Profile closeProfile={closeProfilePage} />
                 ) : selectedChat ? (
                     <>
+                        {/* Chat Header */}
                         <div className="p-4 bg-white border-b border-gray-200 flex items-center justify-between relative">
                             <div className="flex items-center">
                                 <img
                                     src={selectedChat.avatar}
-                                    // src={selectedChat.avatar}
                                     alt={selectedChat.name}
                                     className="w-10 h-10 rounded-full object-cover"
                                 />
@@ -490,11 +494,9 @@ const HomePage = () => {
                                     </div>
                                     );
                                 })}
+                                <div ref={messagesEndRef} />
                             </div>
                         </div>
-
-
-
 
                         {/* Input for Sending Messages */}
                         <div className="p-4 bg-white border-t border-gray-200 flex items-center">
@@ -505,14 +507,14 @@ const HomePage = () => {
                                 value={messageInput}
                                 onChange={(e) => setMessageInput(e.target.value)}
                                 onKeyUp={(e) => {
-                                    if (e.key === "Enter") handleSendMessage(); // Send message on Enter key
+                                    if (e.key === "Enter") handleSendMessage();
                                 }}
                                 placeholder="Gửi tin nhắn"
                                 className="flex-1 px-4 py-2 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                             <button
                                 onClick={handleSendMessage}
-                                disabled={!messageInput.trim()} // Ensure messageInput is non-empty before enabling
+                                disabled={!messageInput.trim()}
                                 className="ml-4 text-blue-500 hover:text-blue-600"
                             >
                                 <IoMdSend size={24} />
@@ -523,6 +525,7 @@ const HomePage = () => {
                     <IntroPage />
                 )}
             </div>
+
             {/* Profile */}
             {showProfileModal && profileData && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-20">

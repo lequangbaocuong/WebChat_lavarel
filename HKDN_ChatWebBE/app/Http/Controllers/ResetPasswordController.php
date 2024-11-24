@@ -6,7 +6,9 @@ use Illuminate\Support\Facades\Password;
 use App\Models\User;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
-
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Mail;
 class ResetPasswordController extends Controller
 {
     public function __invoke(ResetPasswordRequest $request)
@@ -35,4 +37,6 @@ class ResetPasswordController extends Controller
             'message' => __($status)
         ], 400);
     }
+
+    
 }
