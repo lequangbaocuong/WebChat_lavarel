@@ -455,8 +455,8 @@ const HomePage = () => {
                         </div>
 
                         {/* Display Messages */}
-                        <div className="flex-1 flex flex-col pt-20">
-                            <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+                        <div className="flex-1 flex flex-col overflow-y-auto pl-4 bg-gray-50">
+                            <div className="flex-1 p-4 overflow-y-auto space-y-4">
                             {messages.map((message) => {
                                  const currentUserId = localStorage.getItem("user_id");
                                  const isCurrentUser = Number(message.user_id) === Number(currentUserId);  // Make sure you're comparing numbers
