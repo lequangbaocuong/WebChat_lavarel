@@ -33,7 +33,6 @@ const HomePage = () => {
     const [showMemberModal, setShowMemberModal] = useState(false);
     const [roomUsers, setRoomUsers] = useState([]);
 
-    const [selectedRoom, setSelectedRoom] = useState(null);
     const [messages, setMessages] = useState([]);
     const [messageInput, setMessageInput] = useState('');
 
@@ -83,12 +82,12 @@ const HomePage = () => {
     }, []);
 
     
-    useEffect(() => {
-        if (selectedRoom) {
-            fetchMessages(selectedRoom);
-            fetchRoomUser();
-        }
-    }, [selectedRoom]);
+    // useEffect(() => {
+    //     if (selectedChat) {
+    //         fetchMessages(selectedChat);
+    //         fetchRoomUser();
+    //     }
+    // }, [selectedChat]);
 
     const handleKeyPress = (e) => {
         if (e.key === "Enter" && !e.shiftKey) {
@@ -165,6 +164,7 @@ const HomePage = () => {
         })
         .then(response => {
             console.log("Users in room:", response.data);
+            setRoomUsers(response.data)
         })
         .catch(error => {
             console.error("Error fetching users in room:", error);
@@ -194,19 +194,19 @@ const HomePage = () => {
     };
     
     useEffect(() => {
-        if (selectedRoom) {
-            fetchMessages(selectedRoom.id);  // Lấy tin nhắn từ server
+        if (selectedChat) {
+            fetchMessages(selectedChat.id);  // Lấy tin nhắn từ server
         }
-    }, [selectedRoom]);
+    }, [selectedChat]);
     
     
     const handleSendMessage = async () => {
-        if (!selectedRoom || !messageInput.trim()) return;
+        if (!selectedChat || !messageInput.trim()) return;
     
         const token = localStorage.getItem("auth_token");
         try {
             const response = await axios.post(
-                `http://localhost:8000/api/rooms/${selectedRoom.id}/messages`,
+                `http://localhost:8000/api/rooms/${selectedChat.id}/messages`,
                 { content: messageInput },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -245,6 +245,20 @@ const HomePage = () => {
 
     const closeMemberModal = () => {
         setShowMemberModal(false)
+    }
+
+    let callWindowRef = null;
+
+    const makeCall = () => {
+        if (callWindowRef == null || callWindowRef.closed) {
+            callWindowRef = window.open(
+                `${window.location.origin}/video-call?roomId=${selectedChat.id}`,
+                'callWindow'
+            );
+        } else {
+            callWindowRef.focus();
+        }
+        
     }
 
     useEffect(() => {
@@ -345,7 +359,15 @@ const HomePage = () => {
                                     <p className="text-sm text-gray-600">{selectedChat.status}</p>
                                 </div>
                             </div>
-                            <div className="flex space-x-4">
+                            <div className="flex space-x-4 items-center">
+                                <div 
+                                onClick={() => {makeCall()}}
+                                className="hover:cursor-pointer group"
+                                >
+                                    <svg className="w-6 h-6 text-gray-600 group-hover:text-gray-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M7.978 4a2.553 2.553 0 0 0-1.926.877C4.233 6.7 3.699 8.751 4.153 10.814c.44 1.995 1.778 3.893 3.456 5.572 1.68 1.679 3.577 3.018 5.57 3.459 2.062.456 4.115-.073 5.94-1.885a2.556 2.556 0 0 0 .001-3.861l-1.21-1.21a2.689 2.689 0 0 0-3.802 0l-.617.618a.806.806 0 0 1-1.14 0l-1.854-1.855a.807.807 0 0 1 0-1.14l.618-.62a2.692 2.692 0 0 0 0-3.803l-1.21-1.211A2.555 2.555 0 0 0 7.978 4Z"/>
+                                    </svg>
+                                </div>
                                 <BsThreeDotsVertical className="text-gray-600 cursor-pointer" onClick={toggleChatMenu} />
                                 {showChatMenu && (
                                     <div
