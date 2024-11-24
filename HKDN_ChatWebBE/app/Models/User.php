@@ -70,4 +70,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Message::class);
     }
+
+    public function seenMessages()
+    {
+        return $this->belongsToMany(Message::class, 'message_reads')->withTimestamps();
+    }
 }

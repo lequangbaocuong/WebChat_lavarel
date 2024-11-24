@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\SendMessageRequest;
-use App\Models\Message;
 use App\Models\Room;
+use App\Models\Message;
+use App\Events\MessageSeen;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\SendMessageRequest;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log; // Add this line
 
@@ -146,5 +147,25 @@ class MessageController extends Controller
             'success' => true,
             'message' => 'Tin nhắn đã được xóa.'
         ], 200);
+    }
+
+    public function markAsSeen(Request $request, Message $message)
+    {
+        $user = $request->user();
+
+        // Kiểm tra xem user đã xem chưa
+        if (!$message->seenByUsers()->where('user_id', $user->id)->exists()) {
+            $message->seenByUsers()->attach($user->id);
+        }
+        Log::info('Marking message as seen', ['messageId' => $message->id, 'seenBy' => $message->seenByUsers()->get()]);
+
+        // Phát event
+        broadcast(new MessageSeen($message->id, $message->seenByUsers()->get(['id', 'username', 'avatar'])));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Message marked as seen.',
+            'seen_by' => $message->seenByUsers()->get(['id', 'username', 'avatar']),
+        ]);
     }
 }

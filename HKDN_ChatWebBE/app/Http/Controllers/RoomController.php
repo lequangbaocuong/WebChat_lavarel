@@ -351,4 +351,16 @@ class RoomController extends Controller
             'message' => 'User removed from the room successfully',
         ], Response::HTTP_OK);
     }
+
+    public function getMessages(Room $room)
+    {
+        $messages = $room->messages()
+            ->with(['user:id,username,avatar', 'seenByUsers:id,username,avatar'])
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'messages' => $messages,
+        ]);
+    }
 }

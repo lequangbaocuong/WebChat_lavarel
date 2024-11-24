@@ -9,7 +9,17 @@ import Profile from "./Component/ProfilePage";
 import SidebarIcons from "./Component/SidebarIcons";
 import axios from "axios";
 import GroupMemberModal from "./Component/GroupMemberModal";
+import Echo from "laravel-echo";
+import Pusher from "pusher-js";
 
+window.Pusher = Pusher;
+
+window.Echo = new Echo({
+    broadcaster: "pusher",
+    key: "e4eabd0294a831ed2a68",
+    cluster: "ap1",
+    forceTLS: true,
+});
 const HomePage = () => {
     const [selectedChat, setSelectedChat] = useState(null);
     const [message, setMessage] = useState("");
@@ -177,30 +187,33 @@ const HomePage = () => {
         });
     }
 
-    const fetchMessages = async (roomId) => {
-        try {
-            const token = localStorage.getItem("auth_token");
-            if (!token) {
-                throw new Error("No authentication token found");
+        const fetchMessages = async (roomId) => {
+            try {
+                const token = localStorage.getItem("auth_token");
+                if (!token) {
+                    throw new Error("No authentication token found");
+                }
+        
+                const response = await axios.get(`http://localhost:8000/api/rooms/${roomId}/messages`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+                console.log("Respone: ", response);
+                if (response.data.success) {
+                    setMessages(
+                        response.data.messages
+                          .map((message) => ({
+                            ...message,
+                            seenByUsers: message.seenByUsers || [],
+                          }))
+                          .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+                      );
+                }
+            } catch (error) {
+                console.error("Error fetching messages:", error.message);
             }
-    
-            const response = await axios.get(`http://localhost:8000/api/rooms/${roomId}/messages`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-    
-            if (response.data.success) {
-                setMessages(
-                    response.data.messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
-                ); // Sort by timestamp
-            }
-        } catch (error) {
-            console.error("Error fetching messages:", error.message);
-        }
-    };
-    
-    
+        };
     
     useEffect(() => {
         if (selectedRoom) {
@@ -246,6 +259,66 @@ const HomePage = () => {
             // Optionally handle the error case (e.g., show an error message)
         }
     }
+
+    const markMessageAsSeen = async (messageId) => {
+        const token = localStorage.getItem("auth_token");
+        try {
+            await axios.post(
+                `http://localhost:8000/api/messages/${messageId}/seen`,
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+        } catch (error) {
+            console.error("Error marking message as seen:", error.response?.data || error);
+        }
+    };
+
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        const messageId = entry.target.getAttribute("data-id");
+                        markMessageAsSeen(messageId);
+                    }
+                });
+            },
+            { threshold: 0.5 }
+        );
+    
+        document.querySelectorAll(".message").forEach((message) => {
+            observer.observe(message);
+        });
+    
+        return () => observer.disconnect();
+    }, [messages]);
+
+    useEffect(() => {
+        if (window.Echo) {
+            console.log("Echo initialized:", window.Echo);
+            window.Echo.channel("room-messages")
+                .subscribed(() => {
+                    console.log("Subscribed to channel: room-messages");
+                })
+                .listen("MessageSeen", (event) => {
+                    console.log("Received MessageSeen Event:", event);
+                    console.log("Message ID:", event.messageId);
+                    console.log("Seen By:", event.seenBy);
+                    
+                    // Đảm bảo data trong event là chính xác
+                    setMessages((prevMessages) =>
+                        prevMessages.map((message) =>
+                            message.id === event.messageId
+                                ? { ...message, seenByUsers: event.seenBy }
+                                : message
+                        )
+                    );
+                });
+        } else {
+            console.error("Echo is not initialized!");
+        }
+    }, []);
 
     const removeRoomUser = (user) => {
         setRoomUsers(roomUsers.filter(u => u.id != user.id))
@@ -382,11 +455,7 @@ const HomePage = () => {
                             <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
                             {messages.map((message) => {
                                  const currentUserId = localStorage.getItem("user_id");
-                                 console.log("Current User ID from localStorage:", currentUserId);  // Check if it's correct
                                  const isCurrentUser = Number(message.user_id) === Number(currentUserId);  // Make sure you're comparing numbers
-                             
-                                 console.log("Is current user:", isCurrentUser);  // Check if condition is applied correctly
-
                                 return (
                                     <div
                                         key={message.id}
@@ -394,12 +463,30 @@ const HomePage = () => {
                                     >
                                         <div
                                             className={`max-w-[70%] rounded-lg p-3 ${isCurrentUser ? 'bg-indigo-600 text-white' : 'bg-white text-gray-900'} shadow-sm`}
+                                            data-id={message.id}
                                         >
                                             <p>{message.content}</p>
                                             <p className={`text-xs mt-1 ${isCurrentUser ? 'text-indigo-200' : 'text-gray-500'}`}>
                                                 {new Date(message.created_at).toLocaleTimeString()}
                                             </p>
                                         </div>
+
+
+                                        {/* Avatar người đã xem */}
+                                        {message.seenByUsers && message.seenByUsers.length > 0 ? (
+                                            <div className="flex items-center mt-1">
+                                                {message.seenByUsers.map((user) => (
+                                                <img
+                                                    key={user.id}
+                                                    src={user.avatar || "/default-avatar.png"}
+                                                    alt={user.username || "User"}
+                                                    className="w-4 h-4 rounded-full inline-block ml-2"
+                                                />
+                                                ))}
+                                            </div>
+                                            ) : (
+                                            <span className="text-gray-500 text-xs">No one has seen this message yet</span>
+                                            )}
                                     </div>
                                     );
                                 })}

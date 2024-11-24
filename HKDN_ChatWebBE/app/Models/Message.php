@@ -28,4 +28,10 @@ class Message extends Model
     {
         return $this->belongsTo(Room::class);
     }
+
+    public function seenByUsers()
+    {
+        return $this->belongsToMany(User::class, 'message_reads', 'message_id', 'user_id')
+            ->select('users.id', 'users.username', 'users.avatar');
+    }
 }
