@@ -166,10 +166,11 @@ const HomePage = () => {
         const token = localStorage.getItem("auth_token");
         axios.get(`http://localhost:8000/api/room/${roomId}/users`, {
             headers: {
-                Authorization: `Bearer ${token}`,  // Đảm bảo bạn có token nếu cần
+                Authorization: `Bearer ${token}`,
             }
         })
             .then(response => {
+                setRoomUsers(response.data)
                 console.log("Users in room:", response.data);
             })
             .catch(error => {
@@ -248,10 +249,12 @@ const HomePage = () => {
             console.error("newUsers is still not an array:", newUsers);
             // Optionally handle the error case (e.g., show an error message)
         }
+        fetchRoomUser(selectedChat.id);
+
     }
 
     const removeRoomUser = (user) => {
-        setRoomUsers(roomUsers.filter(u => u.id != user.id))
+        setRoomUsers(roomUsers.filter(u => u.id !== user.id))
     }
 
     const openMemberModal = () => {
@@ -511,6 +514,7 @@ const HomePage = () => {
                 group={selectedChat}
                 addRoomUsers={addRoomUsers}
                 removeRoomUser={removeRoomUser}
+
             />
 
         </div>

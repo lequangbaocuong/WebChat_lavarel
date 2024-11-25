@@ -63,7 +63,7 @@ Route::post('/leave', [RoomController::class, 'leaveRoom']);
 Route::middleware('auth:sanctum')->post('/remove-user-from-room', [RoomController::class, 'removeUserFromRoom']);
 
 
-Route::get('/room/{roomId}/users', [RoomController::class, 'getRoomUser']);
+
 Route::post('/add-user-to-room', [RoomController::class, 'addUserToRoom']);
 Route::get('/find-user', [UserController::class, 'find']);
 
@@ -84,11 +84,12 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function() {
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/rooms/{roomId}/messages', [MessageController::class, 'getMessages']);
     Route::post('/rooms/{roomId}/messages', [MessageController::class, 'sendMessage']);
+ 
     Route::delete('/rooms/{roomId}/messages/{messageId}', [MessageController::class, 'deleteMessage']);
 });
 //Chuyển role người dùng
  Route::put('/users/{user_id}/role', [UserController::class, 'updateRole']);
-
+ Route::get('/room/{roomId}/users', [RoomController::class, 'getRoomUser']);
 
  Route::post('/admin-reset', [UserController::class, 'resetPassword']);
  

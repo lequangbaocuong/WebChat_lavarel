@@ -3,7 +3,7 @@ import { debounce } from "../utils/utility";
 import axios from "axios";
 import Dialog from "./Dialog";
 
-const GroupMemberModal = ({ isShowMemberModal, closeModal, users, group, addRoomUsers, removeRoomUser }) => {
+const GroupMemberModal = ({ isShowMemberModal, closeModal, users, group, addRoomUsers, removeRoomUser, fetchRoomUser }) => {
 
     const [showAddMember, setShowAddMember] = useState(false);
     const [searchUsers, setSearchUsers] = useState([]);
@@ -68,55 +68,56 @@ const GroupMemberModal = ({ isShowMemberModal, closeModal, users, group, addRoom
     const addSelectedUsers = () => {
         const roomId = group.id;
         setLoadingAddMember(true);
-    
+
         // Get the token from localStorage
         const token = localStorage.getItem("auth_token");
-    
+
         if (!token) {
             console.error("No token found, user not authenticated");
             return;
         }
-    
+
         // Log selected users for debugging
         console.log("Selected users:", selectedUsers);
-    
+
         // Create the payload with the correct structure
         const payload = {
             emails: selectedUsers.map(user => user.email),  // Ensure emails are correct
             room_id: roomId
         };
-    
+
         console.log("Payload to send:", payload);  // Verify the payload before sending
-    
+
         // Make the POST request to the backend
         axios.post("http://localhost:8000/api/joinroom", payload, {
             headers: {
                 Authorization: `Bearer ${token}` // Add token to header
             }
         })
-        .then(response => {
-            setLoadingAddMember(false);
-            addRoomUsers(response.data.users); // Add users to the room
-            setShowAddMember(false); // Close the 'Add Member' modal
-        })
-        .catch(error => {
-            console.error("Error adding members:", error);
-            setLoadingAddMember(false);
-    
-            if (error.response) {
-                console.error(error.response.data);
-                if (error.response.status === 422) {
-                    alert("Please check the email addresses.");
-                } else if (error.response.status === 401) {
-                    // Token is invalid or expired
-                    // window.location.href = "/login"; // Redirect to login if needed
+            .then(response => {
+                setLoadingAddMember(false);
+                addRoomUsers(response.data.users); // Add users to the room
+                setShowAddMember(false); // Close the 'Add Member' modal
+                fetchRoomUser();
+            })
+            .catch(error => {
+                console.error("Error adding members:", error);
+                setLoadingAddMember(false);
+
+                if (error.response) {
+                    console.error(error.response.data);
+                    if (error.response.status === 422) {
+                        alert("Please check the email addresses.");
+                    } else if (error.response.status === 401) {
+                        // Token is invalid or expired
+                        // window.location.href = "/login"; // Redirect to login if needed
+                    }
                 }
-            }
-        });
+            });
     };
-    
-    
-    
+
+
+
 
     const removeUser = (user) => {
         SetUserToRemove(user);

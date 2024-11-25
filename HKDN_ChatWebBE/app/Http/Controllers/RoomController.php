@@ -65,10 +65,16 @@ class RoomController extends Controller
     }
     public function getRoomUser($roomId)
     {
-        // Logic to fetch user associated with the room
-        $room = Room::findOrFail($roomId);
-        $user = $room->user; // Assuming each room has a user associated with it
-        return response()->json($user);
+
+        $roomUsers = RoomUser::where('room_id', $roomId)->with('users')->get();
+
+        if ($roomUsers->isEmpty()) {
+            return response()->json(['message' => 'No users associated with this room'], 404);
+        }
+    
+        $users = $roomUsers->pluck('users')->flatten();
+    
+        return response()->json($users);
     }
     
     // Create room - Allowed for role_id 1 and 3
