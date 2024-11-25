@@ -36,6 +36,8 @@ const HomePage = () => {
     const [messages, setMessages] = useState([]);
     const [messageInput, setMessageInput] = useState('');
 
+    const [callRoom, setCallRoom] = useState(null);
+
     const currentUser = {
         id: 0,
         name: "You",
@@ -260,13 +262,30 @@ const HomePage = () => {
         } else {
             callWindowRef.focus();
         }
-        
+    }
+
+    const fetchCallRoom = (roomId) => {
+        const token = localStorage.getItem("auth_token");
+        if (token) {
+            axios.get(`http://127.0.0.1:8000/api/room/${roomId}/get-call`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            })
+                .then(response => {
+                    setCallRoom(response.data);
+                })
+                .catch(error => {
+                    console.error("Error fetching call room:", error);
+                });
+        }
     }
 
     useEffect(() => {
         if (selectedChat) {
             fetchMessages(selectedChat.id); // Lấy tin nhắn của nhóm đã chọn
             fetchRoomUser(selectedChat.id); // Lấy thành viên nhóm đã chọn
+            fetchCallRoom(selectedChat.id);
         }
     }, [selectedChat]); // Lắng nghe sự thay đổi của selectedChat
 
@@ -388,6 +407,15 @@ const HomePage = () => {
                                 )}
                             </div>
                         </div>
+                        {callRoom?.participants > 0 &&
+                        <div className="p-2 mx-4 my-2 bg-gray-50 rounded-md border border-gray-200 inline-flex items-center justify-between relative">
+                            <div>
+                                <span className="hover:cursor-default text-sm font-medium border-r border-gray-300 pr-2 mr-2">Video Call</span>
+                                <span className="hover:cursor-default text-sm">{callRoom.participants} participants</span>
+                            </div>
+                            <button onClick={() => makeCall()} type="button" className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-5 py-1">Join</button>
+                        </div>
+                        }
 
                         {/* Display Messages */}
                         <div className="flex-1 overflow-y-auto p-4">

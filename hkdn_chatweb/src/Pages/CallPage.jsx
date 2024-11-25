@@ -10,7 +10,6 @@ const CallPage = () => {
     const [success, setSuccess] = useState(false);
     const [roomName, setRoomName] = useState('');
     const [userName, setUserName] = useState('');
-    const navigate = useNavigate();
 
     const domain = "localhost:8443";
 
@@ -85,8 +84,28 @@ const CallPage = () => {
         });
 
         externalApi.addEventListener(`readyToClose`, ()=>{
-            window.close();
+            leaveCall();
         })
+    }
+
+    const leaveCall = async () => {
+        try {
+            const token = localStorage.getItem("auth_token");
+            const roomId = searchParams.get('roomId');
+            const response = await axios.post(
+                `http://127.0.0.1:8000/api/room/${roomId}/leave-call`,
+                {},
+                { 
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+    
+            console.log(response.data);
+            window.close();
+        } catch (error) {
+            console.error("Error:", error);
+            setSuccess(false);
+        }
     }
 
     const fetchProfile = async () => {
@@ -97,7 +116,7 @@ const CallPage = () => {
                 return;
             }
 
-            const response = await axios.post("http://localhost:8000/api/user/profile", {
+            const response = await axios.post("http://127.0.0.1:8000/api/user/profile", {
                 email: email,
             });
 
@@ -108,11 +127,11 @@ const CallPage = () => {
     };
 
     const fetchCallRoom = async () => {
-        const roomId = searchParams.get('roomId');
-        const token = localStorage.getItem("auth_token");
         try {
+            const token = localStorage.getItem("auth_token");
+            const roomId = searchParams.get('roomId');
             const response = await axios.post(
-                `http://localhost:8000/api/room/${roomId}/make-call`,
+                `http://127.0.0.1:8000/api/room/${roomId}/make-call`,
                 {},
                 { 
                     headers: { Authorization: `Bearer ${token}` },
@@ -134,8 +153,25 @@ const CallPage = () => {
         fetchCallRoom();
     }
 
+    const sendHeartbeat = () => {
+        const token = localStorage.getItem("auth_token");
+        const roomId = searchParams.get('roomId');
+        axios.post(`http://127.0.0.1:8000/api/room/${roomId}/heartbeat`, {},
+            {
+                headers: { Authorization: `Bearer ${token}` },
+            },
+        ).catch(error => {
+            console.error("Error heartbeat:", error);
+        });
+    }
+
     useEffect(() => {
+        
         initCallRoom();
+
+        const interval = setInterval(sendHeartbeat, 60000);
+        
+        return () => clearInterval(interval);
     }, []);
 
     return (

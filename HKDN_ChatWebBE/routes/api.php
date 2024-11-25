@@ -87,7 +87,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/rooms/{roomId}/messages', [MessageController::class, 'sendMessage']);
     Route::delete('/rooms/{roomId}/messages/{messageId}', [MessageController::class, 'deleteMessage']);
     
+    Route::get('room/{roomID}/get-call', [VideoCallController::class, 'getCall']);
     Route::post('room/{roomID}/make-call', [VideoCallController::class, 'makeCall']);
+    Route::post('room/{roomID}/leave-call', [VideoCallController::class, 'leaveCall']);
+    Route::post('room/{roomID}/heartbeat', [VideoCallController::class, 'updateHeartBeat']);
 });
 //Chuyển role người dùng
  Route::put('/users/{user_id}/role', [UserController::class, 'updateRole']);
