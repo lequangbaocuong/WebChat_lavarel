@@ -13,7 +13,7 @@ class Message extends Model
         'user_id',
         'content',
     ];
-      /**
+    /**
      * Người gửi tin nhắn.
      */
     public function user()

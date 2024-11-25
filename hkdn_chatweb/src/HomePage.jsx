@@ -37,6 +37,68 @@ const HomePage = () => {
     const [messages, setMessages] = useState([]);
     const [messageInput, setMessageInput] = useState('');
 
+    const [file, setFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+
+    const handleFileChange = (e) => {
+        const selectedFile = e.target.files[0];
+        if (selectedFile) {
+            setFile(selectedFile);
+        }
+    };
+    
+    const handleUpload = async () => {
+        if (!file || !selectedChat) return;
+    
+        setUploading(true);
+        setUploadProgress(0); // Reset progress
+    
+        try {
+            const uploadedMessage = await uploadFile(selectedChat.id, file, (progressEvent) => {
+                const progress = Math.round(
+                    (progressEvent.loaded * 100) / progressEvent.total
+                );
+                setUploadProgress(progress);
+            });    
+            setFile(null); // Clear file input after upload
+        } catch (error) {
+            console.error(error.message);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const uploadFile = async (roomId, file) => {
+        const token = localStorage.getItem("auth_token");
+    
+        if (!file || !token) return;
+    
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("content", ""); // Đảm bảo content không bị null
+    
+        try {
+            const response = await axios.post(
+                `http://localhost:8000/api/rooms/${roomId}/upload`,
+                formData,
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+    
+            if (response.data.success) {
+                return response.data.message; // Trả về tin nhắn đã upload
+            }
+        } catch (error) {
+            console.error("Error uploading file:", error.response?.data || error);
+            throw new Error("File upload failed");
+        }
+    };    
+    
     const currentUser = {
         id: 0,
         name: "You",
@@ -248,6 +310,14 @@ const HomePage = () => {
     const closeMemberModal = () => {
         setShowMemberModal(false)
     }
+    const handleSendandUpload = () => {
+        if (messageInput.trim()) {
+            handleSendMessage();
+        }
+        if (file) {
+            handleUpload();
+        }
+    };
 
     useEffect(() => {
         if (selectedChat) {
@@ -369,31 +439,78 @@ const HomePage = () => {
 
                         {/* Display Messages */}
                         <div className="flex-1 overflow-y-auto p-4">
-                            {messages.length > 0 ? (
-                                messages.map((msg) => (
-                                    <div
-                                        key={msg.id}
-                                        className={`flex ${msg.user.id === currentUser.id ? "justify-end" : "justify-start"} mb-4`}
-                                    >
-                                        <div
-                                            className={`p-3 rounded-lg max-w-xs ${msg.user.id === currentUser.id ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-900"}`}
-                                        >
-                                            <p>{msg.content}</p>
-                                            <div className="text-xs text-gray-500 mt-1 flex items-center">
-                                                {new Date(msg.created_at).toLocaleTimeString()} {/* Hiển thị thời gian gửi tin */}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))
-                            ) : (
-                                <p>No messages yet</p> // Hiển thị khi không có tin nhắn nào
-                            )}
+                        {messages.length > 0 ? (
+                            messages.map((msg) => (
+                            <div
+                                key={msg.id}
+                                className={`flex ${msg.user.id === currentUser.id ? "justify-end" : "justify-start"} mb-4`}
+                            >
+                                <div
+                                className={`p-3 rounded-lg max-w-xs ${msg.user.id === currentUser.id ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-900"}`}
+                                >
+                                {/* Hiển thị nội dung tin nhắn */}
+                                <p>{msg.content}</p>
+
+                                {/* Kiểm tra nếu tin nhắn có file */}
+                                {msg.file_path && (
+                                    <div className="mt-2">
+                                     {['jpg', 'jpeg', 'png', 'gif'].includes(msg.file_path.split('.').pop().toLowerCase()) ? (
+                                         <img
+                                             src={`http://localhost:8000/storage/${msg.file_path}`} // Đường dẫn tới ảnh
+                                             alt="Sent file"
+                                             className="max-w-full rounded-lg"
+                                         />
+                                     ) : (
+                                         <a
+                                             href={`http://localhost:8000/storage/${msg.file_path}`} // Đường dẫn tải xuống file
+                                             target="_blank"
+                                             rel="noopener noreferrer"
+                                             className="text-blue-500 hover:underline"
+                                         >
+                                             Download File
+                                         </a>
+                                     )}
+                                 </div>
+                                )}
+
+                                <div className="text-xs text-gray-500 mt-1 flex items-center">
+                                    {new Date(msg.created_at).toLocaleTimeString()} {/* Hiển thị thời gian gửi tin */}
+                                </div>
+                                </div>
+                            </div>
+                            ))
+                        ) : (
+                            <p>No messages yet</p> // Hiển thị khi không có tin nhắn nào
+                        )}
                         </div>
 
                         {/* Input for Sending Messages */}
                         <div className="p-4 bg-white border-t border-gray-200 flex items-center">
                             <FiSmile className="text-gray-500 cursor-pointer mr-4" />
-                            <FiPaperclip className="text-gray-500 cursor-pointer mr-4" />
+                            {/* File Input */}
+                            <label htmlFor="file-upload" className="cursor-pointer mr-4">
+                                <FiPaperclip className="text-gray-500" />
+                                <input
+                                    id="file-upload"
+                                    type="file"
+                                    accept="*/*"
+                                    className="hidden"
+                                    onChange={handleFileChange}
+                                />
+                            </label>
+                            {/* ProgressBar */}
+                            {uploading && (
+                                <div className="flex items-center w-full mr-4">
+                                    <div className="w-full bg-gray-200 rounded-lg h-2">
+                                        <div
+                                            className="bg-blue-500 h-2 rounded-lg"
+                                            style={{ width: `${uploadProgress}%` }}
+                                        ></div>
+                                    </div>
+                                    <span className="ml-2 text-sm text-gray-600">{uploadProgress}%</span>
+                                </div>
+                            )}
+
                             <input
                                 type="text"
                                 value={messageInput}
@@ -405,8 +522,8 @@ const HomePage = () => {
                                 className="flex-1 px-4 py-2 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                             <button
-                                onClick={handleSendMessage}
-                                disabled={!messageInput.trim()} // Ensure messageInput is non-empty before enabling
+                                onClick={handleSendandUpload}
+                                disabled={(!messageInput.trim() && !file) || uploading} // Enable if there's either a message or a file
                                 className="ml-4 text-blue-500 hover:text-blue-600"
                             >
                                 <IoMdSend size={24} />
