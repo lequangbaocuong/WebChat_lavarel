@@ -94,7 +94,6 @@ const HomePage = () => {
             fetchMessages(selectedRoom);
             fetchRoomUser();
         }
-
     }, [selectedRoom]);
 
     const handleKeyPress = (e) => {
