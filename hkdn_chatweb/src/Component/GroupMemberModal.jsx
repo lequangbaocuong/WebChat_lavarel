@@ -3,7 +3,7 @@ import { debounce } from "../utils/utility";
 import axios from "axios";
 import Dialog from "./Dialog";
 
-const GroupMemberModal = ({ isShowMemberModal, closeModal, users, group, addRoomUsers, removeRoomUser, fetchRoomUser }) => {
+const GroupMemberModal = ({ isShowMemberModal, closeModal, users, group, addRoomUsers, removeRoomUser }) => {
 
     const [showAddMember, setShowAddMember] = useState(false);
     const [searchUsers, setSearchUsers] = useState([]);
@@ -62,7 +62,7 @@ const GroupMemberModal = ({ isShowMemberModal, closeModal, users, group, addRoom
     }
 
     const deselectUser = (user) => {
-        setSelectedUsers(selectedUsers.filter(u => u.id != user.id))
+        setSelectedUsers(selectedUsers.filter(u => u.id !== user.id))
     }
 
     const addSelectedUsers = () => {
@@ -98,7 +98,7 @@ const GroupMemberModal = ({ isShowMemberModal, closeModal, users, group, addRoom
                 setLoadingAddMember(false);
                 addRoomUsers(response.data.users); // Add users to the room
                 setShowAddMember(false); // Close the 'Add Member' modal
-                fetchRoomUser();
+              
             })
             .catch(error => {
                 console.error("Error adding members:", error);
