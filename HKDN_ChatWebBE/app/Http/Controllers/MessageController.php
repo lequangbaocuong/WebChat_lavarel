@@ -149,23 +149,45 @@ class MessageController extends Controller
         ], 200);
     }
 
-    public function markAsSeen(Request $request, Message $message)
-    {
-        $user = $request->user();
+    // public function markAsSeen(Request $request, Message $message)
+    // {
+    //     $user = $request->user();
 
-        // Kiểm tra xem user đã xem chưa
+    //     // Kiểm tra xem user đã xem chưa
+    //     if (!$message->seenByUsers()->where('user_id', $user->id)->exists()) {
+    //         $message->seenByUsers()->attach($user->id);
+    //     }
+    //     Log::info('Marking message as seen', ['messageId' => $message->id, 'seenBy' => $message->seenByUsers()->get()]);
+
+    //     // Phát event
+    //     broadcast(new MessageSeen($message->id, $message->seenByUsers()->get(['id', 'username', 'avatar'])));
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Message marked as seen.',
+    //         'seen_by' => $message->seenByUsers()->get(['id', 'username', 'avatar']),
+    //     ]);
+    // }
+
+    public function markAsSeen(Message $message)
+    {
+        // Kiểm tra nếu user đã đăng nhập
+        $user = Auth::user();
+        
+        // Kiểm tra nếu message chưa được user này đánh dấu là "đã xem"
         if (!$message->seenByUsers()->where('user_id', $user->id)->exists()) {
             $message->seenByUsers()->attach($user->id);
         }
-        Log::info('Marking message as seen', ['messageId' => $message->id, 'seenBy' => $message->seenByUsers()->get()]);
-
-        // Phát event
-        broadcast(new MessageSeen($message->id, $message->seenByUsers()->get(['id', 'username', 'avatar'])));
 
         return response()->json([
-            'success' => true,
-            'message' => 'Message marked as seen.',
-            'seen_by' => $message->seenByUsers()->get(['id', 'username', 'avatar']),
+            'message' => 'Message marked as seen',
+            'seenByUsers' => $message->seenByUsers,
         ]);
+    }
+
+    public function index()
+    {
+        $messages = Message::with('seenByUsers')->get();
+        return response()->json($messages);
     }
 }

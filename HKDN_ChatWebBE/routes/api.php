@@ -95,7 +95,10 @@ Route::middleware('auth:sanctum')->group(function () {
  Route::post('/user/profile', [UserController::class, 'getProfile']);
  Route::post('/user/update', [UserController::class, 'updateprofile']);
 
- Route::post('/messages/{message}/seen', [MessageController::class, 'markAsSeen'])->middleware('auth:sanctum');
-
+ Route::middleware('auth:sanctum')->group(function () {
+    Route::post('messages/{message}/seen', [MessageController::class, 'markAsSeen']);
+});
  Route::get('/rooms/{room}/messages', [RoomController::class, 'getMessages'])->middleware('auth:sanctum');
+
+ Route::middleware('auth:sanctum')->get('messages', [MessageController::class, 'index']);
 

@@ -11,42 +11,47 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 
-class MessageSeen
+class MessageSeen implements  ShouldBroadcast
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable, SerializesModels;
 
     public $messageId;
-    public $seenBy;
+    public $userId;
+    public $avatarUrl;
 
-    public function __construct($messageId, $seenBy)
+    /**
+     * Create a new event instance.
+     *
+     * @param int $messageId
+     * @param int $userId
+     * @param string $avatarUrl
+     */
+    public function __construct($messageId, $userId, $avatarUrl)
     {
         $this->messageId = $messageId;
-        $this->seenBy = $seenBy;
+        $this->userId = $userId;
+        $this->avatarUrl = $avatarUrl;
     }
 
+    /**
+     * Get the channels the event should broadcast on.
+     *
+     * @return Channel|array
+     */
     public function broadcastOn()
     {
-        return new Channel('room-messages');
+        return new Channel('message-channel');  // Đặt tên kênh phát sóng
     }
 
+    /**
+     * Get the data to broadcast.
+     *
+     * @return array
+     */
     public function broadcastWith()
     {
-        $seenBy = $this->seenBy->map(function ($user) {
-            return [
-                'id' => $user->id,
-                'username' => $user->username,
-                'avatar' => $user->avatar,
-            ];
-        });
-    
-        Log::info('Broadcasting MessageSeen Event:', [
-            'messageId' => $this->messageId,
-            'seenBy' => $seenBy,
-        ]);
-    
-        return [
-            'messageId' => $this->messageId,
-            'seenBy' => $seenBy,
-        ];
+        return 'MessageSeen';
     }
+
+
 }

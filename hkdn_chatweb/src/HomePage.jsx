@@ -9,17 +9,10 @@ import Profile from "./Component/ProfilePage";
 import SidebarIcons from "./Component/SidebarIcons";
 import axios from "axios";
 import GroupMemberModal from "./Component/GroupMemberModal";
-import Echo from "laravel-echo";
-import Pusher from "pusher-js";
+import echo from "./echo"; // Đường dẫn tệp echo.js của bạn
 
-window.Pusher = Pusher;
 
-window.Echo = new Echo({
-    broadcaster: "pusher",
-    key: "e4eabd0294a831ed2a68",
-    cluster: "ap1",
-    forceTLS: true,
-});
+
 const HomePage = () => {
     const [selectedChat, setSelectedChat] = useState(null);
     const [message, setMessage] = useState("");
@@ -46,7 +39,28 @@ const HomePage = () => {
     const [selectedRoom, setSelectedRoom] = useState(null);
     const [messages, setMessages] = useState([]);
     const [messageInput, setMessageInput] = useState('');
+    const [updatedMessages, setUpdatedMessages] = useState(messages);
 
+
+    useEffect(() => {
+        if (!echo) {
+            console.error("Laravel Echo has not been initialized.");
+            return;
+        }
+
+        // Đăng ký channel và lắng nghe sự kiện
+        const channel = echo.channel("message-channel");
+
+        channel.listen("MessageSeen", (event) => {
+            console.log("Message seen event received:", event);
+            // Thêm logic cập nhật message hoặc xử lý sự kiện
+        });
+
+        // Cleanup khi component unmount
+        return () => {
+            channel.stopListening("MessageSeen");
+        };
+    }, []);
     const currentUser = {
         id: 0,
         name: "You",
@@ -264,17 +278,24 @@ const HomePage = () => {
         }
     }
 
-    const markMessageAsSeen = async (messageId) => {
-        const token = localStorage.getItem("auth_token");
-        try {
-            await axios.post(
-                `http://localhost:8000/api/messages/${messageId}/seen`,
-                {},
-                { headers: { Authorization: `Bearer ${token}` } }
+    const markMessageAsSeen = (messageId) => {
+        fetch(`/api/messages/${messageId}/seen`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Cập nhật state messages với dữ liệu trả về (đặc biệt là seenByUsers)
+            setMessages(prevMessages => 
+                prevMessages.map(message =>
+                    message.id === messageId ? { ...message, seenByUsers: data.seenByUsers } : message
+                )
             );
-        } catch (error) {
-            console.error("Error marking message as seen:", error.response?.data || error);
-        }
+        })
+        .catch(err => console.error("Error marking message as seen", err));
     };
 
 
@@ -299,30 +320,31 @@ const HomePage = () => {
     }, [messages]);
 
     useEffect(() => {
-        if (window.Echo) {
-            console.log("Echo initialized:", window.Echo);
-            window.Echo.channel("room-messages")
-                .subscribed(() => {
-                    console.log("Subscribed to channel: room-messages");
-                })
-                .listen("MessageSeen", (event) => {
-                    console.log("Received MessageSeen Event:", event);
-                    console.log("Message ID:", event.messageId);
-                    console.log("Seen By:", event.seenBy);
-                    
-                    // Đảm bảo data trong event là chính xác
-                    setMessages((prevMessages) =>
-                        prevMessages.map((message) =>
-                            message.id === event.messageId
-                                ? { ...message, seenByUsers: event.seenBy }
-                                : message
-                        )
-                    );
-                });
-        } else {
-            console.error("Echo is not initialized!");
+        // Kiểm tra Echo đã được khởi tạo
+        if (!echo) {
+            console.error("Laravel Echo has not been initialized.");
+            return;
         }
+
+        // Lắng nghe sự kiện từ kênh
+        const channel = echo.channel("message-channel");
+        channel.listen("MessageSeen", (event) => {
+            console.log("Message seen event received:", event);
+            setMessages((prevMessages) =>
+                prevMessages.map((msg) =>
+                    msg.id === event.messageId
+                        ? { ...msg, seenByUsers: event.seenBy }
+                        : msg
+                )
+            );
+        });
+
+        return () => {
+            // Hủy lắng nghe khi component unmount
+            channel.stopListening("MessageSeen");
+        };
     }, []);
+
 
     const removeRoomUser = (user) => {
         setRoomUsers(roomUsers.filter(u => u.id != user.id))
@@ -476,21 +498,21 @@ const HomePage = () => {
                                         </div>
 
 
-                                        {/* Avatar người đã xem */}
-                                        {message.seenByUsers && message.seenByUsers.length > 0 ? (
-                                            <div className="flex items-center mt-1">
-                                                {message.seenByUsers.map((user) => (
+                                        {/* Hiển thị avatar người đã xem */}
+                                        <div className="flex items-center ml-2">
+                                            {message.seenByUsers && message.seenByUsers.length > 0 ? (
+                                            message.seenByUsers.map((user) => (
                                                 <img
-                                                    key={user.id}
-                                                    src={user.avatar || "/default-avatar.png"}
-                                                    alt={user.username || "User"}
-                                                    className="w-4 h-4 rounded-full inline-block ml-2"
+                                                key={user.id}
+                                                src={user.avatar || "/default-avatar.png"}
+                                                alt={user.username || "User"}
+                                                className="w-6 h-6 rounded-full ml-1"
                                                 />
-                                                ))}
-                                            </div>
+                                            ))
                                             ) : (
                                             <span className="text-gray-500 text-xs">No one has seen this message yet</span>
                                             )}
+                                        </div>
                                     </div>
                                     );
                                 })}

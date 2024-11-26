@@ -11,4 +11,9 @@ Broadcast::channel('room-messages', function ($user) {
     return $user !== null; 
 });
 
+Broadcast::channel('message-channel', function ($user) {
+    return true;  // Cho phép mọi người nghe kênh này (có thể tùy chỉnh thêm)
+});
+
+
 
