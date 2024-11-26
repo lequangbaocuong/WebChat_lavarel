@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { MdCloudUpload } from "react-icons/md";
 import { FaArrowLeft } from "react-icons/fa";
 import axios from "axios";
-
+import { changepassuser } from "./userapi.js"
 const ProfilePage = ({ closeProfile }) => {
     const [profileData, setProfileData] = useState({
         email: "",
@@ -11,9 +11,43 @@ const ProfilePage = ({ closeProfile }) => {
         avatar: "",
     });
     const [error, setError] = useState("");
+    const [currentPassword, setCurrentPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [message, setMessage] = useState("");
     const fileInputRef = useRef(null);
     const [isEditing, setIsEditing] = useState(false);
+    const handleChangePasswordClick = () => setIsChangingPassword(true);
 
+
+
+
+    const handleSavePasswordClick = async (e) => {
+        e.preventDefault();
+
+        // Kiểm tra mật khẩu mới và xác nhận mật khẩu
+        if (newPassword !== confirmPassword) {
+            setError("Mật khẩu mới và xác nhận mật khẩu không khớp.");
+            setMessage("");
+            return;
+        }
+
+        try {
+            // Gọi API bằng Axios
+            const response = await changepassuser(localStorage.getItem('user_email'), currentPassword, newPassword);
+            alert("Đổi mật khẩu thành công");
+            setError("");
+            setCurrentPassword("");
+            setNewPassword("");
+            setConfirmPassword("");
+            setIsChangingPassword(false);
+            alert("thanh cong");
+        } catch (err) {
+            console.log(err);
+            alert("Sai roi");
+
+        }
+    };
     // Fetch profile data from API
     useEffect(() => {
         const fetchProfile = async () => {
@@ -46,7 +80,7 @@ const ProfilePage = ({ closeProfile }) => {
 
         fetchProfile();
     }, []);
-
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
     // Handle editing inputs
     const handleInputChange = (field, value) => {
         setProfileData((prev) => ({
@@ -88,6 +122,7 @@ const ProfilePage = ({ closeProfile }) => {
     };
 
     const handleCancelClick = () => {
+        setIsChangingPassword(false);
         setIsEditing(false);
     };
 
@@ -138,7 +173,7 @@ const ProfilePage = ({ closeProfile }) => {
                         </div>
 
                         <div className="flex-1 space-y-6">
-                            {!isEditing ? (
+                            {!isEditing && !isChangingPassword ? (
                                 <>
                                     <div>
                                         <div className="text-lg font-medium text-gray-900">{profileData.name}</div>
@@ -151,6 +186,60 @@ const ProfilePage = ({ closeProfile }) => {
                                     >
                                         Edit
                                     </button>
+                                    <button
+                                        onClick={handleChangePasswordClick}
+                                        className="ml-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                                    >
+                                        Change Password
+                                    </button>
+                                </>
+                            ) : isChangingPassword ? (
+                                <>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Mật khẩu hiện tại</label>
+                                        <input
+
+                                            className="mt-1 p-2 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md border border-gray-300"
+                                            type="password"
+                                            value={currentPassword}
+                                            onChange={(e) => setCurrentPassword(e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Mật khẩu mới</label>
+                                        <input
+                                            type="password"
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+
+                                            className="mt-1 p-2 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md border border-gray-300"
+
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Nhập lại mật khẩu mới</label>
+                                        <input
+                                            type="password"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            className="mt-1 p-2 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md border border-gray-300"
+
+                                        />
+                                    </div>
+                                    <div className="pt-5 space-x-4 flex justify-end">
+                                        <button
+                                            onClick={handleSavePasswordClick}
+                                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md shadow-sm text-sm font-medium "
+                                        >
+                                            Save Password
+                                        </button>
+                                        <button
+                                            onClick={handleCancelClick}
+                                            className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-md shadow-sm text-sm font-medium"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
                                 </>
                             ) : (
                                 <>
@@ -160,7 +249,7 @@ const ProfilePage = ({ closeProfile }) => {
                                             type="text"
                                             value={profileData.name}
                                             onChange={(e) => handleInputChange("name", e.target.value)}
-                                            className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-4 pr-12 sm:text-sm border-gray-300 rounded-md"
+                                            className="mt-1 p-2 focus:ring-blue-500 focus:border-blue-500 block w-full pl-4 pr-12 sm:text-sm border-gray-300 rounded-md border border-gray-300"
                                         />
                                     </div>
 
@@ -170,7 +259,7 @@ const ProfilePage = ({ closeProfile }) => {
                                             type="email"
                                             value={profileData.email}
                                             onChange={(e) => handleInputChange("email", e.target.value)}
-                                            className="focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                                            className=" mt-1 p-2 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md border border-gray-300"
                                         />
                                     </div>
 
@@ -180,7 +269,7 @@ const ProfilePage = ({ closeProfile }) => {
                                             type="tel"
                                             value={profileData.phone}
                                             onChange={(e) => handleInputChange("phone", e.target.value)}
-                                            className="focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                                            className=" mt-1 p-2 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md border border-gray-300"
                                         />
                                     </div>
 
@@ -201,6 +290,7 @@ const ProfilePage = ({ closeProfile }) => {
                                 </>
                             )}
                         </div>
+
                     </div>
                 </div>
             </div>

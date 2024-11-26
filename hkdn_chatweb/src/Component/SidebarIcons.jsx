@@ -29,7 +29,7 @@ const SidebarIcons = ({ setShowProfilePage }) => {
     };
 
     return (
-        <div className="w-16 h-screen bg-blue-600 flex flex-col items-center py-4">
+        <div className="w-16 h-screen bg-indigo-600 flex flex-col items-center py-4">
             {/* Avatar and Menu */}
             <div className="relative">
                 <img
@@ -54,12 +54,12 @@ const SidebarIcons = ({ setShowProfilePage }) => {
                 )}
             </div>
             {/* Icon Tin nhắn */}
-            <button title="Tin nhắn" className="text-white hover:bg-blue-500 p-3 rounded-lg mb-2">
+            <button title="Tin nhắn" className="text-white hover:bg-indigo-500 p-3 rounded-lg mb-2">
                 <BsChatDotsFill size={24} />
             </button>
 
             {/* Icon Danh bạ */}
-            <button title="Danh bạ" className="text-white hover:bg-blue-500 p-3 rounded-lg mb-2">
+            <button title="Danh bạ" className="text-white hover:bg-indigo-500 p-3 rounded-lg mb-2">
                 <BsPeopleFill size={24} />
             </button>
 
@@ -67,17 +67,17 @@ const SidebarIcons = ({ setShowProfilePage }) => {
             <div className="w-10 h-px bg-white my-4"></div>
 
             {/* Icon Lưu trữ */}
-            <button title="Lưu trữ" className="text-white hover:bg-blue-500 p-3 rounded-lg mb-2">
+            <button title="Lưu trữ" className="text-white hover:bg-indigo-500 p-3 rounded-lg mb-2">
                 <BsArchiveFill size={24} />
             </button>
 
             {/* Icon Công việc */}
-            <button title="Công việc" className="text-white hover:bg-blue-500 p-3 rounded-lg mb-2">
+            <button title="Công việc" className="text-white hover:bg-indigo-500 p-3 rounded-lg mb-2">
                 <BsListTask size={24} />
             </button>
 
             {/* Icon Cài đặt */}
-            <button title="Cài đặt" className="text-white hover:bg-blue-500 p-3 rounded-lg">
+            <button title="Cài đặt" className="text-white hover:bg-indigo-500 p-3 rounded-lg">
                 <BsGearFill size={24} />
             </button>
 

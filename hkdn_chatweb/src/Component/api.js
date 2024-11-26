@@ -60,5 +60,8 @@ export const changepass = async (email, old_password, new_password, new_password
     const response = await api.post(`/admin/change-password`, { email, old_password, new_password, new_password_confirmation });
     return response.data;
 };
-
+export const changepassuser = async (email, old_password, new_password) => {
+    const response = await api.post(`/change-password`, { email, old_password, new_password });
+    return response.data;
+};
 export default api;
