@@ -7,8 +7,7 @@ const ForgotPassword = () => {
 
   const handleForgotPassword = (e) => {
     e.preventDefault();
-    // Gọi API gửi email reset mật khẩu
-    // Giả sử thành công
+
     setMessage("Mật khẩu mới đã được gửi về email của bạn.");
   };
 

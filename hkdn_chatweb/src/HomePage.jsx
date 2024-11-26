@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { IoMdSend } from "react-icons/io";
+import { MdVideocam, MdCall } from 'react-icons/md';
 import { FiPaperclip, FiSmile } from "react-icons/fi";
 import { BsThreeDotsVertical, BsSearch } from "react-icons/bs";
 import { AiOutlineUserAdd, AiOutlineUsergroupAdd } from "react-icons/ai";
@@ -434,6 +435,8 @@ const HomePage = () => {
                                 </div>
                             </div>
                             <div className="flex space-x-4">
+                                <MdCall className="text-gray-600 cursor-pointer text-lg" />
+                                <MdVideocam className="text-gray-600 cursor-pointer text-lg" />
                                 <BsThreeDotsVertical className="text-gray-600 cursor-pointer" onClick={toggleChatMenu} />
                                 {showChatMenu && (
                                     <div
