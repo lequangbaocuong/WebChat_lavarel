@@ -37,13 +37,71 @@ const HomePage = () => {
     const [messages, setMessages] = useState([]);
     const [messageInput, setMessageInput] = useState('');
 
-    const currentUser = {
-        id: 0,
-        name: "You",
-        birthDate: "01/01/2000",
-        phoneNumber: "+84 123 456 789",
-        avatar: "https://inkythuatso.com/uploads/thumbnails/800/2023/03/6-anh-dai-dien-trang-inkythuatso-03-15-26-36.jpg",
+    const [file, setFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+
+    const handleFileChange = (e) => {
+        const selectedFile = e.target.files[0];
+        if (selectedFile) {
+            setFile(selectedFile);
+        }
     };
+
+    const handleUpload = async () => {
+        if (!file || !selectedChat) return;
+
+        setUploading(true);
+        setUploadProgress(0); // Reset progress
+
+        try {
+            const uploadedMessage = await uploadFile(selectedChat.id, file, (progressEvent) => {
+                const progress = Math.round(
+                    (progressEvent.loaded * 100) / progressEvent.total
+                );
+                setUploadProgress(progress);
+            });
+            setFile(null);
+            // Clear file input after upload
+        } catch (error) {
+            console.error(error.message);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const uploadFile = async (roomId, file) => {
+        const token = localStorage.getItem("auth_token");
+
+        if (!file || !token) return;
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("content", ""); // Đảm bảo content không bị null
+
+        try {
+
+            const response = await axios.post(
+                `http://localhost:8000/api/rooms/${roomId}/upload`,
+                formData,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "multipart/form-data",
+                    },
+                }
+            );
+
+
+            if (response.data.success) {
+                return response.data.message; // Trả về tin nhắn đã upload
+            }
+        } catch (error) {
+            console.error("Error uploading file:", error.response?.data || error);
+            throw new Error("File upload failed");
+        }
+    };
+
     const currentUserId = localStorage.getItem("user_id"); // Lấy user_id từ localStorage
     useEffect(() => {
         console.log("Current User ID:", currentUserId);
@@ -264,6 +322,14 @@ const HomePage = () => {
     const closeMemberModal = () => {
         setShowMemberModal(false)
     }
+    const handleSendandUpload = () => {
+        if (messageInput.trim()) {
+            handleSendMessage();
+        }
+        if (file) {
+            handleUpload();
+        }
+    };
 
     useEffect(() => {
         if (selectedChat) {
@@ -402,6 +468,26 @@ const HomePage = () => {
                                                 className={`max-w-[70%] rounded-lg p-3 ${isCurrentUser ? 'bg-indigo-600 text-white' : 'bg-white text-gray-900'} shadow-sm`}
                                             >
                                                 <p>{message.content}</p>
+                                                {message.file_path && (
+                                                    <div className="mt-2">
+                                                        {['jpg', 'jpeg', 'png', 'gif'].includes(message.file_path.split('.').pop().toLowerCase()) ? (
+                                                            <img
+                                                                src={`http://localhost:8000/storage/${message.file_path}`} // Đường dẫn tới ảnh
+                                                                alt="Sent file"
+                                                                className="max-w-full rounded-lg"
+                                                            />
+                                                        ) : (
+                                                            <a
+                                                                href={`http://localhost:8000/storage/${message.file_path}`} // Đường dẫn tải xuống file
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-blue-500 hover:underline"
+                                                            >
+                                                                Download File
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                )}
                                                 <p className={`text-xs mt-1 ${isCurrentUser ? 'text-indigo-200' : 'text-gray-500'}`}>
                                                     {new Date(message.created_at).toLocaleTimeString()}
                                                 </p>
@@ -416,7 +502,30 @@ const HomePage = () => {
                         {/* Input for Sending Messages */}
                         <div className="p-4 bg-white border-t border-gray-200 flex items-center">
                             <FiSmile className="text-gray-500 cursor-pointer mr-4" />
-                            <FiPaperclip className="text-gray-500 cursor-pointer mr-4" />
+                            {/* File Input */}
+                            <label htmlFor="file-upload" className="cursor-pointer mr-4">
+                                <FiPaperclip className="text-gray-500" />
+                                <input
+                                    id="file-upload"
+                                    type="file"
+                                    accept="*/*"
+                                    className="hidden"
+                                    onChange={handleFileChange}
+                                />
+                            </label>
+                            {/* ProgressBar */}
+                            {uploading && (
+                                <div className="flex items-center w-full mr-4">
+                                    <div className="w-full bg-gray-200 rounded-lg h-2">
+                                        <div
+                                            className="bg-blue-500 h-2 rounded-lg"
+                                            style={{ width: `${uploadProgress}%` }}
+                                        ></div>
+                                    </div>
+                                    <span className="ml-2 text-sm text-gray-600">{uploadProgress}%</span>
+                                </div>
+                            )}
+
                             <input
                                 type="text"
                                 value={messageInput}
@@ -428,8 +537,9 @@ const HomePage = () => {
                                 className="flex-1 px-4 py-2 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                             <button
-                                onClick={handleSendMessage}
-                                disabled={!messageInput.trim()}
+
+                                onClick={handleSendandUpload}
+                                disabled={(!messageInput.trim() && !file) || uploading} // Enable if there's either a message or a file
                                 className="ml-4 text-blue-500 hover:text-blue-600"
                             >
                                 <IoMdSend size={24} />
@@ -439,72 +549,76 @@ const HomePage = () => {
                 ) : (
                     <IntroPage />
                 )}
-            </div>
+            </div >
 
             {/* Profile */}
-            {showProfileModal && profileData && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-20">
-                    <div className="bg-white p-6 rounded-lg shadow-lg w-105">
-                        <h2 className="text-xl font-semibold mb-4">Profile</h2>
-                        <div className="flex items-center mb-4">
-                            <img
-                                src={profileData.avatar}
-                                alt={profileData.name}
-                                className="w-16 h-16 rounded-full object-cover mr-4"
-                            />
-                            <div>
-                                <p><strong>Name:</strong> {profileData.name}</p>
-                                <p><strong>Ngày sinh:</strong> {profileData.birthDate}</p>
-                                <p><strong>Số điện thoại:</strong> {profileData.phoneNumber}</p>
+            {
+                showProfileModal && profileData && (
+                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-20">
+                        <div className="bg-white p-6 rounded-lg shadow-lg w-105">
+                            <h2 className="text-xl font-semibold mb-4">Profile</h2>
+                            <div className="flex items-center mb-4">
+                                <img
+                                    src={profileData.avatar}
+                                    alt={profileData.name}
+                                    className="w-16 h-16 rounded-full object-cover mr-4"
+                                />
+                                <div>
+                                    <p><strong>Name:</strong> {profileData.name}</p>
+                                    <p><strong>Ngày sinh:</strong> {profileData.birthDate}</p>
+                                    <p><strong>Số điện thoại:</strong> {profileData.phoneNumber}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={closeProfileModal}
+                                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                )
+            }
+
+            {
+                showNewGroupModal && (
+                    <div className="fixed inset-0 bg-gray-700 bg-opacity-75 flex items-center justify-center z-50">
+                        <div className="bg-white p-8 rounded-lg w-96 shadow-lg">
+                            <h3 className="text-lg font-semibold mb-4">Create New Group</h3>
+                            {error && <p className="text-red-500 mb-2">{error}</p>}
+                            <div className="space-y-4">
+                                <input
+                                    type="text"
+                                    value={newGroupData.name}
+                                    onChange={(e) => setNewGroupData({ ...newGroupData, name: e.target.value })}
+                                    placeholder="Group name"
+                                    className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <textarea
+                                    value={newGroupData.description}
+                                    onChange={(e) => setNewGroupData({ ...newGroupData, description: e.target.value })}
+                                    placeholder="Description (optional)"
+                                    className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                ></textarea>
+                            </div>
+                            <div className="flex justify-end mt-6 space-x-4">
+                                <button
+                                    onClick={() => setShowNewGroupModal(false)}
+                                    className="text-gray-500 hover:text-gray-700 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleCreateGroup}
+                                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                                >
+                                    Create
+                                </button>
                             </div>
                         </div>
-                        <button
-                            onClick={closeProfileModal}
-                            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg"
-                        >
-                            Close
-                        </button>
                     </div>
-                </div>
-            )}
-
-            {showNewGroupModal && (
-                <div className="fixed inset-0 bg-gray-700 bg-opacity-75 flex items-center justify-center z-50">
-                    <div className="bg-white p-8 rounded-lg w-96 shadow-lg">
-                        <h3 className="text-lg font-semibold mb-4">Create New Group</h3>
-                        {error && <p className="text-red-500 mb-2">{error}</p>}
-                        <div className="space-y-4">
-                            <input
-                                type="text"
-                                value={newGroupData.name}
-                                onChange={(e) => setNewGroupData({ ...newGroupData, name: e.target.value })}
-                                placeholder="Group name"
-                                className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <textarea
-                                value={newGroupData.description}
-                                onChange={(e) => setNewGroupData({ ...newGroupData, description: e.target.value })}
-                                placeholder="Description (optional)"
-                                className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            ></textarea>
-                        </div>
-                        <div className="flex justify-end mt-6 space-x-4">
-                            <button
-                                onClick={() => setShowNewGroupModal(false)}
-                                className="text-gray-500 hover:text-gray-700 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleCreateGroup}
-                                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                            >
-                                Create
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+                )
+            }
 
 
             <GroupMemberModal
@@ -517,7 +631,7 @@ const HomePage = () => {
 
             />
 
-        </div>
+        </div >
     );
 };
 
