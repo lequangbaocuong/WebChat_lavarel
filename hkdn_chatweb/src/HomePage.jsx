@@ -7,6 +7,7 @@ import { FaCheck, FaExclamationCircle } from "react-icons/fa";
 import IntroPage from "./Component/IntroductionPage";
 import Profile from "./Component/ProfilePage";
 import SidebarIcons from "./Component/SidebarIcons";
+import NotificationPopup from './Component/NotificationPopup'
 import axios from "axios";
 import GroupMemberModal from "./Component/GroupMemberModal";
 
@@ -29,6 +30,7 @@ const HomePage = () => {
     const [newGroupData, setNewGroupData] = useState({ name: "", description: "" });
     const [groups, setGroups] = useState([]);
     const [isTyping, setIsTyping] = useState(false);
+    const [showNotification, setShowNotification] = useState(false);
 
     const [showMemberModal, setShowMemberModal] = useState(false);
     const [roomUsers, setRoomUsers] = useState([]);
@@ -190,6 +192,8 @@ const HomePage = () => {
             })
                 .then(response => {
                     if (response.data.success) {
+                        localStorage.setItem('message', response.data.message);
+                        setShowNotification(true);
                         setGroups([...groups, response.data.room]);
                         setShowNewGroupModal(false);
                         setNewGroupData({ name: "", description: "" });
@@ -630,7 +634,7 @@ const HomePage = () => {
                 removeRoomUser={removeRoomUser}
 
             />
-
+              {showNotification && (<NotificationPopup message={localStorage.getItem('message')}/>)}
         </div >
     );
 };

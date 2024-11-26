@@ -88,7 +88,7 @@ class UserController extends Controller
             'otp' => $request->otp,
         ]);
 
-        return response()->json(['success'=>true,'message' => 'User created successfully', 'user' => $user], 201);
+        return response()->json(['success'=>true,'message1' => 'User created successfully', 'user' => $user], 201);
     }
 
     // Edit user - Only allowed for role_id = 1
@@ -126,14 +126,14 @@ class UserController extends Controller
     public function update(Request $request, $id)
     {
         if (Auth::user()->role_id !== 1) {
-            return response()->json(['message' => 'Access denied. Only users with role_id 1 can perform this action.'], 403);
+            return response()->json(['message2' => 'Access denied. Only users with role_id 1 can perform this action.'], 403);
         }
 
         // Find the user by ID
         $user = User::find($id);
 
         if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
+            return response()->json(['message2' => 'User not found'], 404);
         }
 
         // Validate the incoming request
@@ -162,7 +162,7 @@ class UserController extends Controller
         $user->otp = $request->otp ?? $user->otp;
         $user->save();
 
-        return response()->json(['success'=>true,'message' => 'User updated successfully', 'user' => $user]);
+        return response()->json(['success'=>true,'message2' => 'User updated successfully', 'user' => $user]);
     }
 
     // Delete user - Only allowed for role_id = 1

@@ -42,6 +42,7 @@ const LoginPage = () => {
             localStorage.setItem('user_email', response.data.email);
             localStorage.setItem('auth_token', response.data.access_token);
             localStorage.setItem("user_id", response.data.id); // Store the current user's ID on login
+            localStorage.setItem('message', response.data.message);
             navigate('/home');
           }, 3000);
         }
@@ -230,7 +231,7 @@ const LoginPage = () => {
           </Link>
         </p>
       </div>
-      {showNotification && (<NotificationPopup />)}
+      {showNotification && (<NotificationPopup message={localStorage.getItem('message')} />)}
     </div>
   );
 };

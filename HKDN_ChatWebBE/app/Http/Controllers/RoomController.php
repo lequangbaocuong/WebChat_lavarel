@@ -100,7 +100,7 @@ class RoomController extends Controller
         ]);
         return response()->json([
             'success' => true,
-            'message' => 'Room created successfully',
+            'message' => 'Tạo phòng thành công',
             'room' => $room
         ], Response::HTTP_CREATED);
     }

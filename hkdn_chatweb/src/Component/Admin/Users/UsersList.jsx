@@ -10,6 +10,7 @@ const UserManagementDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showNotification, setShowNotification] = useState(false);
+  const [message, setMessage] = useState("");
 
   const fetchUsers = async () => {
     try {
@@ -82,7 +83,7 @@ const UserManagementDashboard = () => {
       }
 
       if (response?.success) {
-
+        setShowNotification(true);
         setIsModalOpen(false);
         setShowNotification(true);
         fetchUsers();
@@ -374,7 +375,13 @@ const UserManagementDashboard = () => {
           </div>
         </div>
       )}
-      {showNotification && (<NotificationPopup />)}
+      {showNotification && (
+          selectedUser ? (
+              <NotificationPopup message={localStorage.getItem('message1')} />
+          ) : (
+              <NotificationPopup message={localStorage.getItem('message2')} />
+          )
+      )}
     </div>
   );
 };
