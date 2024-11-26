@@ -68,12 +68,20 @@ class AuthController extends Controller
         // Tìm người dùng theo email
         $user = User::where('email', $credentials['email'])->first();
 
+        if ($user && $user->status === 'noactive') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tài khoản chưa được xác thực.',
+                'email' => $user->email // Bao gồm email để client xử lý tiếp
+            ], 403); // Mã HTTP 403: Forbidden
+        }
+
         // Kiểm tra thông tin đăng nhập
         if (!$user || !Hash::check($credentials['password'], $user->password)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid credentials'
-            ]);
+                'message' => 'Email hoặc mật khẩu không đúng.'
+            ], 401);
         }
 
         // Tạo token đăng nhập cho người dùng
@@ -84,7 +92,8 @@ class AuthController extends Controller
             'message' => 'Login successful',
             'access_token' => $token,
             'token_type' => 'Bearer',
-            'email' => $user->email // Include email in the response
+            'email' => $user->email, // Include email in the response
+            'id' => $user->id
         ]);
     }
 
