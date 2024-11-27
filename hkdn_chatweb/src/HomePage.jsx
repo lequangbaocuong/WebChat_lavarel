@@ -51,6 +51,12 @@ const HomePage = () => {
         }
     };
 
+    useEffect(() => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [messages]); // Trigger cuộn khi messages thay đổi
+
     const handleUpload = async () => {
         if (!file || !selectedChat) return;
 
