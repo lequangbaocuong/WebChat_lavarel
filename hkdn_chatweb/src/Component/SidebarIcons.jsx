@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { BsChatDotsFill, BsPeopleFill, BsGearFill, BsArchiveFill, BsListTask, BsThreeDotsVertical, BsSearch } from "react-icons/bs";
 import { Link } from "react-router-dom";
-
+import axios from "axios";
 
 
 
@@ -12,14 +12,36 @@ const SidebarIcons = ({ setShowProfilePage }) => {
         setShowProfilePage(true);
     };
     const [showAvatarMenu, setShowAvatarMenu] = useState(false);
+    const [Avatar, setAvatar] = useState("");
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const email = localStorage.getItem("user_email");
+
+                if (!email) {
+
+                    return;
+                }
+
+                const response = await axios.post("http://localhost:8000/api/user/profile", {
+                    email: email,
+                });
+
+                const data = response.data;
+                console.log(data);
+                setAvatar(data.avatar);
 
 
+            } catch (err) {
+                console.error("Lỗi khi lấy dữ liệu từ API:", err);
+            }
+        };
+
+        fetchProfile();
+    }, []);
     const currentUser = {
-        id: 0,
-        name: "You",
-        birthDate: "01/01/2000",
-        phoneNumber: "+84 123 456 789",
-        avatar: "https://inkythuatso.com/uploads/thumbnails/800/2023/03/6-anh-dai-dien-trang-inkythuatso-03-15-26-36.jpg",
+
+        avatar: `http://localhost:8000/storage/${Avatar}`,
     };
 
 

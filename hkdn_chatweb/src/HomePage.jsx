@@ -50,13 +50,16 @@ const HomePage = () => {
             setFile(selectedFile);
         }
     };
-
+    const isImageFile = (filePath) => {
+        const imageExtensions = ['jpg', 'jpeg', 'png', 'gif'];
+        const fileExtension = filePath.split('.').pop().toLowerCase();
+        return imageExtensions.includes(fileExtension);
+    };
     useEffect(() => {
         if (messagesEndRef.current) {
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
-    }, [messages]); // Trigger cuộn khi messages thay đổi
-
+    }, [messages]); // 
     const handleUpload = async () => {
         if (!file || !selectedChat) return;
 
@@ -71,25 +74,29 @@ const HomePage = () => {
                 setUploadProgress(progress);
             });
             setFile(null);
+
             // Clear file input after upload
+            // Bạn có thể cập nhật thêm trạng thái hoặc thực hiện hành động khác sau khi upload thành công
+            console.log('File uploaded successfully:', uploadedMessage);
         } catch (error) {
-            console.error(error.message);
+            console.error("Error during file upload:", error.message);
+            // Có thể hiển thị thông báo lỗi cho người dùng ở đây
         } finally {
+
             setUploading(false);
         }
     };
 
-    const uploadFile = async (roomId, file) => {
+    const uploadFile = async (roomId, file, onProgress) => {
         const token = localStorage.getItem("auth_token");
 
         if (!file || !token) return;
 
         const formData = new FormData();
         formData.append("file", file);
-        formData.append("content", ""); // Đảm bảo content không bị null
+        formData.append("content", ""); // Đảm bảo content không bị null nếu cần
 
         try {
-
             const response = await axios.post(
                 `http://localhost:8000/api/rooms/${roomId}/upload`,
                 formData,
@@ -98,16 +105,19 @@ const HomePage = () => {
                         Authorization: `Bearer ${token}`,
                         "Content-Type": "multipart/form-data",
                     },
+                    onUploadProgress: onProgress, // Theo dõi tiến độ upload
                 }
             );
 
-
             if (response.data.success) {
-                return response.data.message; // Trả về tin nhắn đã upload
+                return response.data.message;
+                // Trả về thông tin tin nhắn đã upload
+            } else {
+                throw new Error(response.data.message || 'File upload failed');
             }
         } catch (error) {
-            console.error("Error uploading file:", error.response?.data || error);
-            throw new Error("File upload failed");
+            console.error("Error uploading file:", error.response?.data || error.message);
+            throw new Error("File upload failed: " + (error.response?.data?.message || error.message));
         }
     };
 
@@ -263,6 +273,7 @@ const HomePage = () => {
             if (response.data.success) {
                 setMessages(
                     response.data.messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+
                 ); // Sort by timestamp
             }
         } catch (error) {
@@ -295,6 +306,7 @@ const HomePage = () => {
             if (response.data.success) {
                 setMessages((prevMessages) => [...prevMessages, response.data.data]);  // Thêm tin nhắn mới vào state
                 setMessageInput("");
+
             }
 
 
@@ -398,10 +410,14 @@ const HomePage = () => {
                         >
                             <div className="relative">
                                 <img
-                                    src={group.avatar}
+                                    src={""}
                                     // src={group.avatar}
                                     alt={group.name}
                                     className="w-12 h-12 rounded-full object-cover"
+                                    onError={(e) => {
+                                        e.target.onerror = null;
+                                        e.target.src = "/gr.png";
+                                    }}
                                 />
                                 <span
                                     className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${group.status === "online"
@@ -483,15 +499,15 @@ const HomePage = () => {
                                                 <p>{message.content}</p>
                                                 {message.file_path && (
                                                     <div className="mt-2">
-                                                        {['jpg', 'jpeg', 'png', 'gif'].includes(message.file_path.split('.').pop().toLowerCase()) ? (
+                                                        {isImageFile(message.file_path) ? (
                                                             <img
-                                                                src={`http://localhost:8000/storage/${message.file_path}`} // Đường dẫn tới ảnh
+                                                                src={`http://localhost:8000/storage/${message.file_path}`}
                                                                 alt="Sent file"
                                                                 className="max-w-full rounded-lg"
                                                             />
                                                         ) : (
                                                             <a
-                                                                href={`http://localhost:8000/storage/${message.file_path}`} // Đường dẫn tải xuống file
+                                                                href={`http://localhost:8000/storage/${message.file_path}`}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
                                                                 className="text-blue-500 hover:underline"
@@ -643,7 +659,7 @@ const HomePage = () => {
                 removeRoomUser={removeRoomUser}
 
             />
-              {showNotification && (<NotificationPopup message={localStorage.getItem('message')}/>)}
+            {showNotification && (<NotificationPopup message={localStorage.getItem('message')} />)}
         </div >
     );
 };

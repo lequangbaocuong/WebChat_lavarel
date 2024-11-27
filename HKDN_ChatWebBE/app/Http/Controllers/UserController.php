@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Illuminate\Support\Facades\Storage;
 use App\Models\User;
 use App\Models\Role;
 use Illuminate\Http\Request;
@@ -88,7 +88,7 @@ class UserController extends Controller
             'otp' => $request->otp,
         ]);
 
-        return response()->json(['success'=>true,'message1' => 'User created successfully', 'user' => $user], 201);
+        return response()->json(['success'=>true,'message' => 'Thêm mới người dùng thành công', 'user' => $user], 201);
     }
 
     // Edit user - Only allowed for role_id = 1
@@ -299,5 +299,32 @@ class UserController extends Controller
         } catch (\Exception $e) {
             return response()->json(['message' => 'Đã xảy ra lỗi khi cập nhật thông tin', 'error' => $e->getMessage()], 500);
         }
+    }
+    public function uploadAvatar(Request $request)
+    {
+        $request->validate([
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'email' => 'required|email',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        // Xử lý upload ảnh
+        if ($request->hasFile('avatar')) {
+            $avatar = $request->file('avatar');
+            $avatarPath = $avatar->store('avatars', 'public'); // Lưu vào storage/app/public/avatars
+
+            // Cập nhật avatar cho người dùng
+            $user->avatar = $avatarPath;
+            $user->save();
+
+            return response()->json(['avatar' => $user->avatar]);
+        }
+
+        return response()->json(['error' => 'No file uploaded'], 400);
     }
 }

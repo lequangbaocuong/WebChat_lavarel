@@ -84,6 +84,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/rooms/{roomId}/upload', [MessageController::class, 'uploadFile']);
     Route::delete('/rooms/{roomId}/messages/{messageId}', [MessageController::class, 'deleteMessage']);
     Route::post('/change-password', [UserController::class, 'changePassword']);
+    Route::post('/upload-avatar', [UserController::class, 'uploadAvatar']);
 });
 //Chuyển role người dùng
  Route::put('/users/{user_id}/role', [UserController::class, 'updateRole']);
