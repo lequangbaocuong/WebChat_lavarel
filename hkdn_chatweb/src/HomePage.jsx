@@ -11,9 +11,6 @@ import SidebarIcons from "./Component/SidebarIcons";
 import NotificationPopup from './Component/NotificationPopup'
 import axios from "axios";
 import GroupMemberModal from "./Component/GroupMemberModal";
-import echo from "./echo"; // Đường dẫn tệp echo.js của bạn
-
-
 
 const HomePage = () => {
     const [selectedChat, setSelectedChat] = useState(null);
@@ -42,35 +39,6 @@ const HomePage = () => {
     const [selectedRoom, setSelectedRoom] = useState(null);
     const [messages, setMessages] = useState([]);
     const [messageInput, setMessageInput] = useState('');
-    const [updatedMessages, setUpdatedMessages] = useState(messages);
-
-
-    useEffect(() => {
-        if (!echo) {
-            console.error("Laravel Echo has not been initialized.");
-            return;
-        }
-
-        // Đăng ký channel và lắng nghe sự kiện
-        const channel = echo.channel("message-channel");
-
-        channel.listen("MessageSeen", (event) => {
-            console.log("Message seen event received:", event);
-            // Thêm logic cập nhật message hoặc xử lý sự kiện
-        });
-
-        // Cleanup khi component unmount
-        return () => {
-            channel.stopListening("MessageSeen");
-        };
-    }, []);
-    const currentUser = {
-        id: 0,
-        name: "You",
-        birthDate: "01/01/2000",
-        phoneNumber: "+84 123 456 789",
-        avatar: "https://inkythuatso.com/uploads/thumbnails/800/2023/03/6-anh-dai-dien-trang-inkythuatso-03-15-26-36.jpg",
-    };
 
     const [file, setFile] = useState(null);
     const [uploading, setUploading] = useState(false);
@@ -289,34 +257,32 @@ const HomePage = () => {
             });
     }
 
-        const fetchMessages = async (roomId) => {
-            try {
-                const token = localStorage.getItem("auth_token");
-                if (!token) {
-                    throw new Error("No authentication token found");
-                }
-        
-                const response = await axios.get(`http://localhost:8000/api/rooms/${roomId}/messages`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-                console.log("Respone: ", response);
-                if (response.data.success) {
-                    setMessages(
-                        response.data.messages
-                          .map((message) => ({
-                            ...message,
-                            seenByUsers: message.seenByUsers || [],
-                          }))
-                          .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
-                      );
-                }
-            } catch (error) {
-                console.error("Error fetching messages:", error.message);
+    const fetchMessages = async (roomId) => {
+        try {
+            const token = localStorage.getItem("auth_token");
+            if (!token) {
+                throw new Error("No authentication token found");
             }
-        };
-    
+
+            const response = await axios.get(`http://localhost:8000/api/rooms/${roomId}/messages`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (response.data.success) {
+                setMessages(
+                    response.data.messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+
+                ); // Sort by timestamp
+            }
+        } catch (error) {
+            console.error("Error fetching messages:", error.message);
+        }
+    };
+
+
+
     useEffect(() => {
         if (selectedRoom) {
             fetchMessages(selectedRoom.id);  // Lấy tin nhắn từ server
@@ -365,75 +331,8 @@ const HomePage = () => {
             // Optionally handle the error case (e.g., show an error message)
         }
         fetchRoomUser(selectedChat.id);
+
     }
-
-    const markMessageAsSeen = (messageId) => {
-        fetch(`/api/messages/${messageId}/seen`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-            },
-        })
-        .then(response => response.json())
-        .then(data => {
-            // Cập nhật state messages với dữ liệu trả về (đặc biệt là seenByUsers)
-            setMessages(prevMessages => 
-                prevMessages.map(message =>
-                    message.id === messageId ? { ...message, seenByUsers: data.seenByUsers } : message
-                )
-            );
-        })
-        .catch(err => console.error("Error marking message as seen", err));
-    };
-
-
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            (entries) => {
-                entries.forEach((entry) => {
-                    if (entry.isIntersecting) {
-                        const messageId = entry.target.getAttribute("data-id");
-                        markMessageAsSeen(messageId);
-                    }
-                });
-            },
-            { threshold: 0.5 }
-        );
-    
-        document.querySelectorAll(".message").forEach((message) => {
-            observer.observe(message);
-        });
-    
-        return () => observer.disconnect();
-    }, [messages]);
-
-    useEffect(() => {
-        // Kiểm tra Echo đã được khởi tạo
-        if (!echo) {
-            console.error("Laravel Echo has not been initialized.");
-            return;
-        }
-
-        // Lắng nghe sự kiện từ kênh
-        const channel = echo.channel("message-channel");
-        channel.listen("MessageSeen", (event) => {
-            console.log("Message seen event received:", event);
-            setMessages((prevMessages) =>
-                prevMessages.map((msg) =>
-                    msg.id === event.messageId
-                        ? { ...msg, seenByUsers: event.seenBy }
-                        : msg
-                )
-            );
-        });
-
-        return () => {
-            // Hủy lắng nghe khi component unmount
-            channel.stopListening("MessageSeen");
-        };
-    }, []);
-
 
     const removeRoomUser = (user) => {
         setRoomUsers(roomUsers.filter(u => u.id !== user.id))
@@ -597,6 +496,11 @@ const HomePage = () => {
                                             <div
                                                 className={`max-w-[70%] rounded-lg p-3 ${isCurrentUser ? 'bg-indigo-600 text-white' : 'bg-white text-gray-900'} shadow-sm`}
                                             >
+                                                {!isCurrentUser && (
+                                                    <p className="text-sm text-gray-600 font-semibold mb-1">
+                                                        {message.user?.username || 'Unknown User'}
+                                                    </p>
+                                                )}
                                                 <p>{message.content}</p>
                                                 {message.file_path && (
                                                     <div className="mt-2">
