@@ -1,27 +1,53 @@
 import React, { useState, useEffect } from "react";
 import { BsChevronLeft, BsChevronRight } from "react-icons/bs";
 import { FaComments, FaUserFriends, FaLock, FaSmile } from "react-icons/fa";
-
+import axios from "axios";
 const IntroductionPage = () => {
+    const [Name, setName] = useState("");
     const [currentSlide, setCurrentSlide] = useState(0);
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const email = localStorage.getItem("user_email");
 
+                if (!email) {
+
+                    return;
+                }
+
+                const response = await axios.post("http://localhost:8000/api/user/profile", {
+                    email: email,
+                });
+
+                const data = response.data;
+                console.log(data);
+                setName(data.name);
+
+
+            } catch (err) {
+                console.error("Lỗi khi lấy dữ liệu từ API:", err);
+            }
+        };
+
+        fetchProfile();
+    }, []);
     const slides = [
         {
             id: 1,
-            title: "Hello, Cuong!",
-            description: "Welcome to webchat",
+            title: `Chào ${Name}`,
+            description: "Chào mừng đến với Trang web của chúng tôi",
             image: "images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3",
         },
         {
             id: 2,
-            title: "Real-Time Messaging",
-            description: "Experience seamless communication with instant message delivery",
+            title: "Chat thời gian thực",
+            description: "Kiếm người yêu trong gang tất",
             image: "images.unsplash.com/photo-1577563908411-5077b6dc7624?ixlib=rb-4.0.3",
         },
         {
             id: 3,
-            title: "Secure & Private",
-            description: "Your conversations are protected with end-to-end encryption",
+            title: "An Toàn và Bảo Mật",
+            description: "Nói xấu vợ không sợ vợ biết",
             image: "images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?ixlib=rb-4.0.3",
         },
     ];
@@ -29,23 +55,23 @@ const IntroductionPage = () => {
     const features = [
         {
             icon: <FaComments className="w-8 h-8" />,
-            title: "Instant Messaging",
-            description: "Send and receive messages in real-time",
+            title: "Nhắn tin nhanh",
+            description: "Tin gửi 3s đi đâu không biết",
         },
         {
             icon: <FaUserFriends className="w-8 h-8" />,
-            title: "Group Chats",
-            description: "Create and manage group conversations",
+            title: "Tạo nhóm",
+            description: "Tạo nhóm nói xấu vợ",
         },
         {
             icon: <FaLock className="w-8 h-8" />,
-            title: "Secure Communication",
-            description: "End-to-end encryption for your privacy",
+            title: "Bảo mật",
+            description: "Bảo sẽ giữ bí mật",
         },
         {
             icon: <FaSmile className="w-8 h-8" />,
-            title: "Rich Media Sharing",
-            description: "Share photos, videos, and emojis",
+            title: "Chia sẻ tài liệu",
+            description: "Kế hoach vĩ đại của những thiên tài",
         },
     ];
 

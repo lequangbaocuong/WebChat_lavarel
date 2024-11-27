@@ -71,7 +71,7 @@ class AuthController extends Controller
         if ($user && $user->status === 'noactive') {
             return response()->json([
                 'success' => false,
-                'message' => 'Tài khoản chưa được xác thực.',
+                'message' => 'Tài khoản chưa được xác thực. ',
                 'email' => $user->email // Bao gồm email để client xử lý tiếp
             ], 403); // Mã HTTP 403: Forbidden
         }
@@ -89,7 +89,7 @@ class AuthController extends Controller
        
         return response()->json([
             'success' => true,
-            'message' => 'Đăng nhập thành công',
+            'message' => 'Login successful',
             'access_token' => $token,
             'token_type' => 'Bearer',
             'email' => $user->email, // Include email in the response

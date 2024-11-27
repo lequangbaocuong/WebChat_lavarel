@@ -181,7 +181,7 @@ class MessageController extends Controller
         // Check if file is in the request
         if ($request->hasFile('file')) {
             // Store the file in the storage
-            $filePath = $request->file('file')->store('uploads');
+            $filePath = $request->file('file')->store('uploads', 'public');
 
             // Create a new message with the file path
             $message = new Message();

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('messages', function (Blueprint $table) {
-            $table->string('file_path')->nullable(); // Thêm cột file_path, cho phép null
+            $table->string('file_path')->default(null); // Thêm cột file_path với giá trị mặc định là 'falt'
         });
     }
 

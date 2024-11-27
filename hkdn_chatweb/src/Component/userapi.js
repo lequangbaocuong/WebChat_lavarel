@@ -13,8 +13,19 @@ userapi.interceptors.request.use((config) => {
     return config;
 });
 
-export const changepassuser = async (email, old_password, new_password) => {
-    const response = await userapi.post(`/change-password`, { email, old_password, new_password });
+export const changepassuser = async (email, old_password, new_password, new_password_confirmation) => {
+    const response = await userapi.post(`/change-password`, { email, old_password, new_password, new_password_confirmation });
     return response.data;
+};
+export const changeavatar = async (email, avatar) => {
+    const formData = new FormData();
+    formData.append('email', email);
+    formData.append('avatar', avatar);
+    const response = await userapi.post(`/upload-avatar`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    return response;
 };
 export default userapi;

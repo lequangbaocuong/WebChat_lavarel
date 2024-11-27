@@ -15,7 +15,7 @@ api.interceptors.request.use((config) => {
 export const adduser = async (username, email, role_id) => {
     const password = "123456789"
     const response = await api.post('/admin/adduser', { username, email, password, role_id });
-    localStorage.setItem('message1', response.data.message1);
+    localStorage.setItem('message1', response.data.message);
     return response.data;
 }
 export const getuser = async () => {
