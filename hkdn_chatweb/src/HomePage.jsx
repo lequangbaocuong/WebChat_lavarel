@@ -537,6 +537,11 @@ const HomePage = () => {
                                             <div
                                                 className={`max-w-[70%] rounded-lg p-3 ${isCurrentUser ? 'bg-indigo-600 text-white' : 'bg-white text-gray-900'} shadow-sm`}
                                             >
+                                                {!isCurrentUser && (
+                                                    <p className="text-sm text-gray-600 font-semibold mb-1">
+                                                        {message.user?.username || 'Unknown User'}
+                                                    </p>
+                                                )}
                                                 <p>{message.content}</p>
                                                 {message.file_path && (
                                                     <div className="mt-2">
