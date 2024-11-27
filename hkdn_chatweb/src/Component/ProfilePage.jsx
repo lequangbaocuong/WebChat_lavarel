@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { MdCloudUpload } from "react-icons/md";
 import { FaArrowLeft } from "react-icons/fa";
 import axios from "axios";
+import { changepassuser, changeavatar } from "./userapi.js";
 
 const ProfilePage = ({ closeProfile }) => {
     const [profileData, setProfileData] = useState({
@@ -11,8 +12,40 @@ const ProfilePage = ({ closeProfile }) => {
         avatar: "",
     });
     const [error, setError] = useState("");
+    const [currentPassword, setCurrentPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [message, setMessage] = useState("");
     const fileInputRef = useRef(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+    const handleChangePasswordClick = () => setIsChangingPassword(true);
+
+    const handleSavePasswordClick = async (e) => {
+        e.preventDefault();
+
+        // Kiểm tra mật khẩu mới và xác nhận mật khẩu
+        if (newPassword !== confirmPassword) {
+            setError("Mật khẩu mới và xác nhận mật khẩu không khớp.");
+            setMessage("");
+            return;
+        }
+
+        try {
+            // Gọi API bằng Axios
+            const response = await changepassuser(localStorage.getItem('user_email'), currentPassword, newPassword, confirmPassword);
+            alert("Đổi mật khẩu thành công");
+            setError("");
+            setCurrentPassword("");
+            setNewPassword("");
+            setConfirmPassword("");
+            setIsChangingPassword(false);
+        } catch (err) {
+            console.log(err);
+            alert("Sai mật khẩu hiện tại.");
+        }
+    };
 
     // Fetch profile data from API
     useEffect(() => {
@@ -56,17 +89,23 @@ const ProfilePage = ({ closeProfile }) => {
     };
 
     // Handle avatar upload
-    const handleImageChange = (e) => {
+    const handleImageChange = async (e) => {
         const file = e.target.files[0];
+        console.log(file);
         if (file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
+            try {
+                // Gửi ảnh lên server Laravel
+                const response = await changeavatar(localStorage.getItem("user_email"), file);
+                // Sau khi upload thành công, cập nhật avatar mới
                 setProfileData((prev) => ({
                     ...prev,
-                    avatar: e.target.result, // Update avatar as base64
+                    avatar: response.data.avatar, // URL của ảnh mới từ response
                 }));
-            };
-            reader.readAsDataURL(file);
+                alert("Avatar updated successfully!");
+            } catch (error) {
+                console.error("Error uploading avatar:", error);
+                alert("Failed to update avatar.");
+            }
         }
     };
 
@@ -76,7 +115,6 @@ const ProfilePage = ({ closeProfile }) => {
 
     const handleSaveClick = async () => {
         try {
-
             // Call API to save updated profile data
             const response = await axios.post("http://localhost:8000/api/user/update", profileData);
             console.log(response);
@@ -88,6 +126,7 @@ const ProfilePage = ({ closeProfile }) => {
     };
 
     const handleCancelClick = () => {
+        setIsChangingPassword(false);
         setIsEditing(false);
     };
 
@@ -113,14 +152,13 @@ const ProfilePage = ({ closeProfile }) => {
                         >
                             <div className="w-48 h-48 rounded-full overflow-hidden ring-8 ring-offset-4 ring-blue-500 shadow-lg">
                                 <img
-                                    src={`/${profileData.avatar}`}
+                                    src={`http://localhost:8000/storage/${profileData.avatar}`}
                                     alt="Profile"
                                     className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                        e.target.src = "https://example.com/default-avatar.jpg";
-                                    }}
                                 />
+
                             </div>
+
                             <div
                                 className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 rounded-full cursor-pointer transition-opacity"
                                 onClick={() => fileInputRef.current?.click()}
@@ -138,7 +176,7 @@ const ProfilePage = ({ closeProfile }) => {
                         </div>
 
                         <div className="flex-1 space-y-6">
-                            {!isEditing ? (
+                            {!isEditing && !isChangingPassword ? (
                                 <>
                                     <div>
                                         <div className="text-lg font-medium text-gray-900">{profileData.name}</div>
@@ -151,55 +189,105 @@ const ProfilePage = ({ closeProfile }) => {
                                     >
                                         Edit
                                     </button>
+                                    <button
+                                        onClick={handleChangePasswordClick}
+                                        className="ml-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                                    >
+                                        Change Password
+                                    </button>
+                                </>
+                            ) : isChangingPassword ? (
+                                <>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Mật khẩu hiện tại</label>
+                                        <input
+                                            className="mt-1 p-2 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md border border-gray-300"
+                                            type="password"
+                                            value={currentPassword}
+                                            onChange={(e) => setCurrentPassword(e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Mật khẩu mới</label>
+                                        <input
+                                            type="password"
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                            className="mt-1 p-2 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md border border-gray-300"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Nhập lại mật khẩu mới</label>
+                                        <input
+                                            type="password"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            className="mt-1 p-2 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md border border-gray-300"
+                                        />
+                                    </div>
+                                    <div className="pt-5 space-x-4 flex justify-end">
+                                        <button
+                                            onClick={handleSavePasswordClick}
+                                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md shadow-sm text-sm font-medium "
+                                        >
+                                            Save Password
+                                        </button>
+                                        <button
+                                            onClick={handleCancelClick}
+                                            className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-md shadow-sm text-sm font-medium "
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
                                 </>
                             ) : (
                                 <>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700">Name</label>
-                                        <input
-                                            type="text"
-                                            value={profileData.name}
-                                            onChange={(e) => handleInputChange("name", e.target.value)}
-                                            className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-4 pr-12 sm:text-sm border-gray-300 rounded-md"
-                                        />
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Tên người dùng</label>
+                                            <input
+                                                className="mt-1 p-2 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md border"
+                                                type="text"
+                                                value={profileData.name}
+                                                onChange={(e) => handleInputChange("name", e.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Email</label>
+                                            <input
+                                                className="mt-1 p-2 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md border"
+                                                type="email"
+                                                value={profileData.email}
+                                                disabled
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Số điện thoại</label>
+                                            <input
+                                                className="mt-1 p-2 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md border"
+                                                type="text"
+                                                value={profileData.phone}
+                                                onChange={(e) => handleInputChange("phone", e.target.value)}
+                                            />
+                                        </div>
                                     </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700">Email</label>
-                                        <input
-                                            type="email"
-                                            value={profileData.email}
-                                            onChange={(e) => handleInputChange("email", e.target.value)}
-                                            className="focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700">Phone</label>
-                                        <input
-                                            type="tel"
-                                            value={profileData.phone}
-                                            onChange={(e) => handleInputChange("phone", e.target.value)}
-                                            className="focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                                        />
-                                    </div>
-
                                     <div className="pt-5 space-x-4 flex justify-end">
                                         <button
                                             onClick={handleSaveClick}
-                                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md shadow-sm text-sm font-medium"
+                                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md shadow-sm text-sm font-medium "
                                         >
                                             Save Changes
                                         </button>
                                         <button
                                             onClick={handleCancelClick}
-                                            className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-md shadow-sm text-sm font-medium"
+                                            className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-md shadow-sm text-sm font-medium "
                                         >
                                             Cancel
                                         </button>
                                     </div>
                                 </>
                             )}
+                            {error && <div className="text-red-600 mt-3">{error}</div>}
                         </div>
                     </div>
                 </div>

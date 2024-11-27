@@ -10,6 +10,7 @@ const UserManagementDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showNotification, setShowNotification] = useState(false);
+  const [message, setMessage] = useState("");
 
   const fetchUsers = async () => {
     try {
@@ -36,6 +37,8 @@ const UserManagementDashboard = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState("");
+
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -60,42 +63,28 @@ const UserManagementDashboard = () => {
 
 
   const handleSubmit = async (e) => {
-
     e.preventDefault();
-
-    // if (!validateForm()) return;
 
     try {
       setIsLoading(true);
-
       let response;
       if (selectedUser) {
-
-        // Cập nhật thông tin người dùng
         response = await edituser(selectedUser.id, formData.username, formData.email, formData.role);
-
       } else {
-
-        // Thêm mới người dùng
         response = await adduser(formData.username, formData.email, formData.role);
-
       }
 
       if (response?.success) {
-
-        setIsModalOpen(false);
+        setNotificationMessage(selectedUser ? `Cập nhật thành công !` : `Thêm mới thành công !`);
         setShowNotification(true);
         fetchUsers();
-        setIsModalOpen(false);
         resetForm();
-
-      } else {
-        console.error("Error:", response.data.message);
       }
     } catch (error) {
-      console.error("Error submitting form:", error);
+      console.error("Error:", error);
     } finally {
       setIsLoading(false);
+      setIsModalOpen(false);
     }
   };
 
@@ -139,6 +128,7 @@ const UserManagementDashboard = () => {
       address: users.address
     });
     setIsModalOpen(true);
+
   };
 
 
@@ -187,12 +177,12 @@ const UserManagementDashboard = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <img
-                          src={`/${users.avatar}`}
+                          src={`http://localhost:8000/storage/${users.avatar}`}
                           alt={users.username}
                           className="h-10 w-10 rounded-full object-cover"
                           onError={(e) => {
                             e.target.onerror = null;
-                            e.target.src = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde";
+                            e.target.src = "/user.png";
                           }}
                         />
                         <div className="ml-4">
@@ -229,6 +219,7 @@ const UserManagementDashboard = () => {
                 ))}
               </tbody>
             </table>
+
           </div>
 
           <div className="mt-4 flex justify-between items-center">
@@ -374,7 +365,10 @@ const UserManagementDashboard = () => {
           </div>
         </div>
       )}
-      {showNotification && (<NotificationPopup />)}
+      {showNotification && (
+
+        <NotificationPopup message={notificationMessage} />
+      )}
     </div>
   );
 };

@@ -30,8 +30,6 @@ Route::post('/verifyOtp', [VerificationController::class, 'verifyOtp']);
 // Các route yêu cầu người dùng đăng nhập
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
-
-    
 });
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
@@ -64,11 +62,11 @@ Route::post('/leave', [RoomController::class, 'leaveRoom']);
 Route::middleware('auth:sanctum')->post('/remove-user-from-room', [RoomController::class, 'removeUserFromRoom']);
 
 
-Route::get('/room/{roomId}/users', [RoomController::class, 'getRoomUser']);
+
 Route::post('/add-user-to-room', [RoomController::class, 'addUserToRoom']);
 Route::get('/find-user', [UserController::class, 'find']);
 
-Route::prefix('admin')->middleware('auth:sanctum')->group(function() {
+Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [UserController::class, 'index']);        // List users
     Route::post('/adduser', [UserController::class, 'store']);       // Add user
     Route::put('/edituser/{id}', [UserController::class, 'update']);   // Edit user
@@ -78,14 +76,16 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function() {
     Route::put('/editroom/{room_id}', [RoomController::class, 'update']);
     Route::delete('/deleteroom/{room_id}', [RoomController::class, 'destroy']);
     Route::post('/change-password', [UserController::class, 'changePassword']);
- 
 });
 
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/rooms/{roomId}/messages', [MessageController::class, 'getMessages']);
     Route::post('/rooms/{roomId}/messages', [MessageController::class, 'sendMessage']);
+    Route::post('/rooms/{roomId}/upload', [MessageController::class, 'uploadFile']);
     Route::delete('/rooms/{roomId}/messages/{messageId}', [MessageController::class, 'deleteMessage']);
+    Route::post('/change-password', [UserController::class, 'changePassword']);
+    Route::post('/upload-avatar', [UserController::class, 'uploadAvatar']);
     
     Route::get('room/{roomID}/get-call', [VideoCallController::class, 'getCall']);
     Route::post('room/{roomID}/make-call', [VideoCallController::class, 'makeCall']);
@@ -94,9 +94,12 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 //Chuyển role người dùng
  Route::put('/users/{user_id}/role', [UserController::class, 'updateRole']);
+ Route::get('/room/{roomId}/users', [RoomController::class, 'getRoomUser']);
 
 
- Route::post('/admin-reset', [UserController::class, 'resetPassword']);
- 
- Route::post('/user/profile', [UserController::class, 'getProfile']);
- Route::post('/user/update', [UserController::class, 'updateprofile']);
+Route::post('/admin-reset', [UserController::class, 'resetPassword']);
+
+Route::post('/user/profile', [UserController::class, 'getProfile']);
+Route::post('/user/update', [UserController::class, 'updateprofile']);
+
+Route::post('/room/{roomId}/upload', [MessageController::class, 'uploadFile']);

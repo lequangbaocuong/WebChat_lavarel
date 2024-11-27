@@ -15,6 +15,7 @@ api.interceptors.request.use((config) => {
 export const adduser = async (username, email, role_id) => {
     const password = "123456789"
     const response = await api.post('/admin/adduser', { username, email, password, role_id });
+    localStorage.setItem('message1', response.data.message);
     return response.data;
 }
 export const getuser = async () => {
@@ -27,6 +28,7 @@ export const deleteuser = async (selectedUser) => {
 };
 export const edituser = async (selectedUser, username, email, role_id) => {
     const response = await api.put(`/admin/edituser/${selectedUser}`, { username, email, role_id });
+    localStorage.setItem('message2', response.data.message2);
     return response.data;
 };
 
@@ -60,5 +62,8 @@ export const changepass = async (email, old_password, new_password, new_password
     const response = await api.post(`/admin/change-password`, { email, old_password, new_password, new_password_confirmation });
     return response.data;
 };
-
+export const changepassuser = async (email, old_password, new_password) => {
+    const response = await api.post(`/change-password`, { email, old_password, new_password });
+    return response.data;
+};
 export default api;

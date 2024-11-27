@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { IoMdSend } from "react-icons/io";
+import { MdVideocam, MdCall } from 'react-icons/md';
 import { FiPaperclip, FiSmile } from "react-icons/fi";
 import { BsThreeDotsVertical, BsSearch } from "react-icons/bs";
 import { AiOutlineUserAdd, AiOutlineUsergroupAdd } from "react-icons/ai";
@@ -7,6 +8,7 @@ import { FaCheck, FaExclamationCircle } from "react-icons/fa";
 import IntroPage from "./Component/IntroductionPage";
 import Profile from "./Component/ProfilePage";
 import SidebarIcons from "./Component/SidebarIcons";
+import NotificationPopup from './Component/NotificationPopup'
 import axios from "axios";
 import GroupMemberModal from "./Component/GroupMemberModal";
 
@@ -23,12 +25,13 @@ const HomePage = () => {
     const avatarMenuRef = useRef(null);
     const sidebarMenuRef = useRef(null);
     const [showSidebarMenu, setShowSidebarMenu] = useState(false);
-
+    const messagesEndRef = useRef(null);
     const [showNewGroupModal, setShowNewGroupModal] = useState(false);
     const [error, setError] = useState("");
     const [newGroupData, setNewGroupData] = useState({ name: "", description: "" });
     const [groups, setGroups] = useState([]);
     const [isTyping, setIsTyping] = useState(false);
+    const [showNotification, setShowNotification] = useState(false);
 
     const [showMemberModal, setShowMemberModal] = useState(false);
     const [roomUsers, setRoomUsers] = useState([]);
@@ -38,13 +41,93 @@ const HomePage = () => {
 
     const [callRoom, setCallRoom] = useState(null);
 
-    const currentUser = {
-        id: 0,
-        name: "You",
-        birthDate: "01/01/2000",
-        phoneNumber: "+84 123 456 789",
-        avatar: "https://inkythuatso.com/uploads/thumbnails/800/2023/03/6-anh-dai-dien-trang-inkythuatso-03-15-26-36.jpg",
+    const [file, setFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+
+    const handleFileChange = (e) => {
+        const selectedFile = e.target.files[0];
+        if (selectedFile) {
+            setFile(selectedFile);
+        }
     };
+    const isImageFile = (filePath) => {
+        const imageExtensions = ['jpg', 'jpeg', 'png', 'gif'];
+        const fileExtension = filePath.split('.').pop().toLowerCase();
+        return imageExtensions.includes(fileExtension);
+    };
+    useEffect(() => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [messages]); // 
+    const handleUpload = async () => {
+        if (!file || !selectedChat) return;
+
+        setUploading(true);
+        setUploadProgress(0); // Reset progress
+
+        try {
+            const uploadedMessage = await uploadFile(selectedChat.id, file, (progressEvent) => {
+                const progress = Math.round(
+                    (progressEvent.loaded * 100) / progressEvent.total
+                );
+                setUploadProgress(progress);
+            });
+            setFile(null);
+
+            // Clear file input after upload
+            // Bạn có thể cập nhật thêm trạng thái hoặc thực hiện hành động khác sau khi upload thành công
+            console.log('File uploaded successfully:', uploadedMessage);
+        } catch (error) {
+            console.error("Error during file upload:", error.message);
+            // Có thể hiển thị thông báo lỗi cho người dùng ở đây
+        } finally {
+
+            setUploading(false);
+        }
+    };
+
+    const uploadFile = async (roomId, file, onProgress) => {
+        const token = localStorage.getItem("auth_token");
+
+        if (!file || !token) return;
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("content", ""); // Đảm bảo content không bị null nếu cần
+
+        try {
+            const response = await axios.post(
+                `http://localhost:8000/api/rooms/${roomId}/upload`,
+                formData,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "multipart/form-data",
+                    },
+                    onUploadProgress: onProgress, // Theo dõi tiến độ upload
+                }
+            );
+
+            if (response.data.success) {
+                return response.data.message;
+                // Trả về thông tin tin nhắn đã upload
+            } else {
+                throw new Error(response.data.message || 'File upload failed');
+            }
+        } catch (error) {
+            console.error("Error uploading file:", error.response?.data || error.message);
+            throw new Error("File upload failed: " + (error.response?.data?.message || error.message));
+        }
+    };
+
+    const currentUserId = localStorage.getItem("user_id"); // Lấy user_id từ localStorage
+    useEffect(() => {
+        console.log("Current User ID:", currentUserId);
+        console.log("Messages:", messages);
+    }, [messages]); // Kiểm tra mỗi khi messages thay đổi
+
 
 
     useEffect(() => {
@@ -127,6 +210,8 @@ const HomePage = () => {
             })
                 .then(response => {
                     if (response.data.success) {
+                        localStorage.setItem('message', response.data.message);
+                        setShowNotification(true);
                         setGroups([...groups, response.data.room]);
                         setShowNewGroupModal(false);
                         setNewGroupData({ name: "", description: "" });
@@ -161,51 +246,54 @@ const HomePage = () => {
         const token = localStorage.getItem("auth_token");
         axios.get(`http://localhost:8000/api/room/${roomId}/users`, {
             headers: {
-                Authorization: `Bearer ${token}`,  // Đảm bảo bạn có token nếu cần
+                Authorization: `Bearer ${token}`,
             }
         })
-        .then(response => {
-            console.log("Users in room:", response.data);
-            setRoomUsers(response.data)
-        })
-        .catch(error => {
-            console.error("Error fetching users in room:", error);
-        });
+            .then(response => {
+                setRoomUsers(response.data)
+                console.log("Users in room:", response.data);
+            })
+            .catch(error => {
+                console.error("Error fetching users in room:", error);
+            });
     }
 
     const fetchMessages = async (roomId) => {
         try {
             const token = localStorage.getItem("auth_token");
-    
             if (!token) {
-                throw new Error('No authentication token found');
+                throw new Error("No authentication token found");
             }
-    
+
             const response = await axios.get(`http://localhost:8000/api/rooms/${roomId}/messages`, {
                 headers: {
-                    'Authorization': `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
             });
-    
+
             if (response.data.success) {
-                setMessages(response.data.messages);  // Lưu tin nhắn vào state
+                setMessages(
+                    response.data.messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+
+                ); // Sort by timestamp
             }
         } catch (error) {
-            console.error('Error fetching messages:', error.message);
+            console.error("Error fetching messages:", error.message);
         }
     };
-    
-    
+
+
+
     useEffect(() => {
         if (selectedChat) {
             fetchMessages(selectedChat.id);  // Lấy tin nhắn từ server
         }
-    }, [selectedChat]);
-    
-    
+    }, [selectedRoom]);
+
+
     const handleSendMessage = async () => {
         if (!selectedChat || !messageInput.trim()) return;
-    
+
         const token = localStorage.getItem("auth_token");
         try {
             const response = await axios.post(
@@ -213,21 +301,27 @@ const HomePage = () => {
                 { content: messageInput },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-    
+
+            console.log(response.data); // Kiểm tra dữ liệu phản hồi
+
             if (response.data.success) {
                 setMessages((prevMessages) => [...prevMessages, response.data.data]);  // Thêm tin nhắn mới vào state
                 setMessageInput("");
+
             }
+
+
+
         } catch (error) {
             console.error("Error sending message:", error.response?.data || error);
         }
     };
-    
-    
+
+
 
     function addRoomUsers(newUsers) {
         newUsers = newUsers || []; // Fallback to an empty array if newUsers is undefined or null
-    
+
         if (Array.isArray(newUsers)) {
             newUsers.forEach(user => {
                 // Add the user to the room (your existing logic)
@@ -237,10 +331,12 @@ const HomePage = () => {
             console.error("newUsers is still not an array:", newUsers);
             // Optionally handle the error case (e.g., show an error message)
         }
+        fetchRoomUser(selectedChat.id);
+
     }
 
     const removeRoomUser = (user) => {
-        setRoomUsers(roomUsers.filter(u => u.id != user.id))
+        setRoomUsers(roomUsers.filter(u => u.id !== user.id))
     }
 
     const openMemberModal = () => {
@@ -250,6 +346,14 @@ const HomePage = () => {
     const closeMemberModal = () => {
         setShowMemberModal(false)
     }
+    const handleSendandUpload = () => {
+        if (messageInput.trim()) {
+            handleSendMessage();
+        }
+        if (file) {
+            handleUpload();
+        }
+    };
 
     let callWindowRef = null;
 
@@ -304,7 +408,7 @@ const HomePage = () => {
     return (
         <div className="flex h-full">
             <SidebarIcons setShowProfilePage={setShowProfilePage} ></SidebarIcons>
-            <div className="w-1/4 bg-white border-r border-gray-200 relative">
+            <div className="w-1/4 bg-white border-r border-gray-200 relative ">
                 <div className="p-4 border-b border-gray-200 mb-2">
                     <div className="flex items-center justify-between mb-4">
                         <h1 className="text-xl font-semibold">Tin nhắn</h1>
@@ -338,10 +442,14 @@ const HomePage = () => {
                         >
                             <div className="relative">
                                 <img
-                                    src={group.avatar}
+                                    src={""}
                                     // src={group.avatar}
                                     alt={group.name}
                                     className="w-12 h-12 rounded-full object-cover"
+                                    onError={(e) => {
+                                        e.target.onerror = null;
+                                        e.target.src = "/gr.png";
+                                    }}
                                 />
                                 <span
                                     className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${group.status === "online"
@@ -361,17 +469,17 @@ const HomePage = () => {
             </div>
 
             {/* Main Chat */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col  h-screen">
                 {/* Show Profile Component */}
                 {showProfilePage ? (
                     <Profile closeProfile={closeProfilePage} />
                 ) : selectedChat ? (
                     <>
+                        {/* Chat Header */}
                         <div className="p-4 bg-white border-b border-gray-200 flex items-center justify-between relative">
                             <div className="flex items-center">
                                 <img
                                     src={selectedChat.avatar}
-                                    // src={selectedChat.avatar}
                                     alt={selectedChat.name}
                                     className="w-10 h-10 rounded-full object-cover"
                                 />
@@ -380,15 +488,9 @@ const HomePage = () => {
                                     <p className="text-sm text-gray-600">{selectedChat.status}</p>
                                 </div>
                             </div>
-                            <div className="flex space-x-4 items-center">
-                                <div 
-                                onClick={() => {makeCall()}}
-                                className="hover:cursor-pointer group"
-                                >
-                                    <svg className="w-6 h-6 text-gray-600 group-hover:text-gray-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M7.978 4a2.553 2.553 0 0 0-1.926.877C4.233 6.7 3.699 8.751 4.153 10.814c.44 1.995 1.778 3.893 3.456 5.572 1.68 1.679 3.577 3.018 5.57 3.459 2.062.456 4.115-.073 5.94-1.885a2.556 2.556 0 0 0 .001-3.861l-1.21-1.21a2.689 2.689 0 0 0-3.802 0l-.617.618a.806.806 0 0 1-1.14 0l-1.854-1.855a.807.807 0 0 1 0-1.14l.618-.62a2.692 2.692 0 0 0 0-3.803l-1.21-1.211A2.555 2.555 0 0 0 7.978 4Z"/>
-                                    </svg>
-                                </div>
+                            <div className="flex space-x-4">
+                                <MdCall onClick={() => {makeCall()}} className="text-gray-600 cursor-pointer text-lg" />
+                                <MdVideocam onClick={() => {makeCall()}} className="text-gray-600 cursor-pointer text-lg" />
                                 <BsThreeDotsVertical className="text-gray-600 cursor-pointer" onClick={toggleChatMenu} />
                                 {showChatMenu && (
                                     <div
@@ -418,45 +520,96 @@ const HomePage = () => {
                         }
 
                         {/* Display Messages */}
-                        <div className="flex-1 overflow-y-auto p-4">
-                            {messages.length > 0 ? (
-                                messages.map((msg) => (
-                                    <div
-                                        key={msg.id}
-                                        className={`flex ${msg.user.id === currentUser.id ? "justify-end" : "justify-start"} mb-4`}
-                                    >
+                        <div className="flex-1 flex flex-col overflow-y-auto pl-4 bg-gray-50">
+                            <div
+                                className="flex-1 p-4 overflow-y-auto space-y-4"
+
+                            >
+                                {messages.map((message) => {
+                                    const currentUserId = localStorage.getItem("user_id");
+                                    const isCurrentUser = Number(message.user_id) === Number(currentUserId);
+
+                                    return (
                                         <div
-                                            className={`p-3 rounded-lg max-w-xs ${msg.user.id === currentUser.id ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-900"}`}
+                                            key={message.id}
+                                            className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-4`}
                                         >
-                                            <p>{msg.content}</p>
-                                            <div className="text-xs text-gray-500 mt-1 flex items-center">
-                                                {new Date(msg.created_at).toLocaleTimeString()} {/* Hiển thị thời gian gửi tin */}
+                                            <div
+                                                className={`max-w-[70%] rounded-lg p-3 ${isCurrentUser ? 'bg-indigo-600 text-white' : 'bg-white text-gray-900'} shadow-sm`}
+                                            >
+                                                <p>{message.content}</p>
+                                                {message.file_path && (
+                                                    <div className="mt-2">
+                                                        {isImageFile(message.file_path) ? (
+                                                            <img
+                                                                src={`http://localhost:8000/storage/${message.file_path}`}
+                                                                alt="Sent file"
+                                                                className="max-w-full rounded-lg"
+                                                            />
+                                                        ) : (
+                                                            <a
+                                                                href={`http://localhost:8000/storage/${message.file_path}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-blue-500 hover:underline"
+                                                            >
+                                                                Download File
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                <p className={`text-xs mt-1 ${isCurrentUser ? 'text-indigo-200' : 'text-gray-500'}`}>
+                                                    {new Date(message.created_at).toLocaleTimeString()}
+                                                </p>
                                             </div>
                                         </div>
-                                    </div>
-                                ))
-                            ) : (
-                                <p>No messages yet</p> // Hiển thị khi không có tin nhắn nào
-                            )}
+                                    );
+                                })}
+                                <div ref={messagesEndRef} />
+                            </div>
                         </div>
 
                         {/* Input for Sending Messages */}
                         <div className="p-4 bg-white border-t border-gray-200 flex items-center">
                             <FiSmile className="text-gray-500 cursor-pointer mr-4" />
-                            <FiPaperclip className="text-gray-500 cursor-pointer mr-4" />
+                            {/* File Input */}
+                            <label htmlFor="file-upload" className="cursor-pointer mr-4">
+                                <FiPaperclip className="text-gray-500" />
+                                <input
+                                    id="file-upload"
+                                    type="file"
+                                    accept="*/*"
+                                    className="hidden"
+                                    onChange={handleFileChange}
+                                />
+                            </label>
+                            {/* ProgressBar */}
+                            {uploading && (
+                                <div className="flex items-center w-full mr-4">
+                                    <div className="w-full bg-gray-200 rounded-lg h-2">
+                                        <div
+                                            className="bg-blue-500 h-2 rounded-lg"
+                                            style={{ width: `${uploadProgress}%` }}
+                                        ></div>
+                                    </div>
+                                    <span className="ml-2 text-sm text-gray-600">{uploadProgress}%</span>
+                                </div>
+                            )}
+
                             <input
                                 type="text"
                                 value={messageInput}
                                 onChange={(e) => setMessageInput(e.target.value)}
                                 onKeyUp={(e) => {
-                                    if (e.key === "Enter") handleSendMessage(); // Send message on Enter key
+                                    if (e.key === "Enter") handleSendMessage();
                                 }}
                                 placeholder="Gửi tin nhắn"
                                 className="flex-1 px-4 py-2 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                             <button
-                                onClick={handleSendMessage}
-                                disabled={!messageInput.trim()} // Ensure messageInput is non-empty before enabling
+
+                                onClick={handleSendandUpload}
+                                disabled={(!messageInput.trim() && !file) || uploading} // Enable if there's either a message or a file
                                 className="ml-4 text-blue-500 hover:text-blue-600"
                             >
                                 <IoMdSend size={24} />
@@ -466,71 +619,76 @@ const HomePage = () => {
                 ) : (
                     <IntroPage />
                 )}
-            </div>
+            </div >
+
             {/* Profile */}
-            {showProfileModal && profileData && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-20">
-                    <div className="bg-white p-6 rounded-lg shadow-lg w-105">
-                        <h2 className="text-xl font-semibold mb-4">Profile</h2>
-                        <div className="flex items-center mb-4">
-                            <img
-                                src={profileData.avatar}
-                                alt={profileData.name}
-                                className="w-16 h-16 rounded-full object-cover mr-4"
-                            />
-                            <div>
-                                <p><strong>Name:</strong> {profileData.name}</p>
-                                <p><strong>Ngày sinh:</strong> {profileData.birthDate}</p>
-                                <p><strong>Số điện thoại:</strong> {profileData.phoneNumber}</p>
+            {
+                showProfileModal && profileData && (
+                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-20">
+                        <div className="bg-white p-6 rounded-lg shadow-lg w-105">
+                            <h2 className="text-xl font-semibold mb-4">Profile</h2>
+                            <div className="flex items-center mb-4">
+                                <img
+                                    src={profileData.avatar}
+                                    alt={profileData.name}
+                                    className="w-16 h-16 rounded-full object-cover mr-4"
+                                />
+                                <div>
+                                    <p><strong>Name:</strong> {profileData.name}</p>
+                                    <p><strong>Ngày sinh:</strong> {profileData.birthDate}</p>
+                                    <p><strong>Số điện thoại:</strong> {profileData.phoneNumber}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={closeProfileModal}
+                                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                )
+            }
+
+            {
+                showNewGroupModal && (
+                    <div className="fixed inset-0 bg-gray-700 bg-opacity-75 flex items-center justify-center z-50">
+                        <div className="bg-white p-8 rounded-lg w-96 shadow-lg">
+                            <h3 className="text-lg font-semibold mb-4">Create New Group</h3>
+                            {error && <p className="text-red-500 mb-2">{error}</p>}
+                            <div className="space-y-4">
+                                <input
+                                    type="text"
+                                    value={newGroupData.name}
+                                    onChange={(e) => setNewGroupData({ ...newGroupData, name: e.target.value })}
+                                    placeholder="Group name"
+                                    className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <textarea
+                                    value={newGroupData.description}
+                                    onChange={(e) => setNewGroupData({ ...newGroupData, description: e.target.value })}
+                                    placeholder="Description (optional)"
+                                    className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                ></textarea>
+                            </div>
+                            <div className="flex justify-end mt-6 space-x-4">
+                                <button
+                                    onClick={() => setShowNewGroupModal(false)}
+                                    className="text-gray-500 hover:text-gray-700 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleCreateGroup}
+                                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                                >
+                                    Create
+                                </button>
                             </div>
                         </div>
-                        <button
-                            onClick={closeProfileModal}
-                            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg"
-                        >
-                            Close
-                        </button>
                     </div>
-                </div>
-            )}
-
-            {showNewGroupModal && (
-                <div className="fixed inset-0 bg-gray-700 bg-opacity-75 flex items-center justify-center z-50">
-                    <div className="bg-white p-8 rounded-lg w-96 shadow-lg">
-                        <h3 className="text-lg font-semibold mb-4">Create New Group</h3>
-                        {error && <p className="text-red-500 mb-2">{error}</p>}
-                        <div className="space-y-4">
-                            <input
-                                type="text"
-                                value={newGroupData.name}
-                                onChange={(e) => setNewGroupData({ ...newGroupData, name: e.target.value })}
-                                placeholder="Group name"
-                                className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <textarea
-                                value={newGroupData.description}
-                                onChange={(e) => setNewGroupData({ ...newGroupData, description: e.target.value })}
-                                placeholder="Description (optional)"
-                                className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            ></textarea>
-                        </div>
-                        <div className="flex justify-end mt-6 space-x-4">
-                            <button
-                                onClick={() => setShowNewGroupModal(false)}
-                                className="text-gray-500 hover:text-gray-700 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleCreateGroup}
-                                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                            >
-                                Create
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+                )
+            }
 
 
             <GroupMemberModal
@@ -540,9 +698,10 @@ const HomePage = () => {
                 group={selectedChat}
                 addRoomUsers={addRoomUsers}
                 removeRoomUser={removeRoomUser}
-            />
 
-        </div>
+            />
+            {showNotification && (<NotificationPopup message={localStorage.getItem('message')} />)}
+        </div >
     );
 };
 

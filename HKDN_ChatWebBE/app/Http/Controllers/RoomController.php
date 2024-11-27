@@ -65,9 +65,16 @@ class RoomController extends Controller
     }
     public function getRoomUser($roomId)
     {
-        // Logic to fetch user associated with the room
-        $room = Room::with('users')->findOrFail($roomId);
-        return response()->json($room->users);
+
+        $roomUsers = RoomUser::where('room_id', $roomId)->with('users')->get();
+
+        if ($roomUsers->isEmpty()) {
+            return response()->json(['message' => 'No users associated with this room'], 404);
+        }
+    
+        $users = $roomUsers->pluck('users')->flatten();
+    
+        return response()->json($users);
     }
     
     // Create room - Allowed for role_id 1 and 3
@@ -93,7 +100,7 @@ class RoomController extends Controller
         ]);
         return response()->json([
             'success' => true,
-            'message' => 'Room created successfully',
+            'message' => 'Tạo phòng thành công',
             'room' => $room
         ], Response::HTTP_CREATED);
     }

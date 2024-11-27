@@ -42,7 +42,11 @@ class MessageController extends Controller
         }
 
         // Lấy các tin nhắn trong phòng chat, sắp xếp theo thời gian
-        $messages = $room->messages()->with('user')->orderBy('created_at', 'asc')->get();
+        $messages = $room->messages()->with('user')->orderBy('created_at', 'asc')->get()
+            ->map(function ($message) {
+                $message->file_url = $message->file_path ? asset('storage/' . $message->file_path) : null;
+                return $message;
+            });
 
         return response()->json([
             'success' => true,
@@ -146,5 +150,56 @@ class MessageController extends Controller
             'success' => true,
             'message' => 'Tin nhắn đã được xóa.'
         ], 200);
+    }
+
+    public function uploadFile(Request $request, $roomId)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:jpg,jpeg,png,pdf,docx|max:10240', // Adjust file types as needed
+        ]);
+
+
+        $user = Auth::user();
+        
+        // Check if the room exists
+        $room = Room::find($roomId);
+        if (!$room) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Room not found',
+            ], 404);
+        }
+
+        // Check if the user has access to the room
+        if (!$room->users()->where('user_id', $user->id)->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have access to this room',
+            ], 403);
+        }
+
+        // Check if file is in the request
+        if ($request->hasFile('file')) {
+            // Store the file in the storage
+            $filePath = $request->file('file')->store('uploads', 'public');
+
+            // Create a new message with the file path
+            $message = new Message();
+            $message->room_id = $roomId;
+            $message->user_id = $user->id;
+            $message->content = $request->file('file')->getClientOriginalName();
+            $message->file_path = $filePath;
+            $message->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'No file uploaded',
+        ], 400);
     }
 }

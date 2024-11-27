@@ -26,6 +26,7 @@ const LoginPage = () => {
 
 
   const handleSubmit = async (e) => {
+    localStorage.setItem('email', email);
     e.preventDefault();
     if (!errors.email && !errors.password && email && password) {
       setLoading(true);
@@ -35,23 +36,53 @@ const LoginPage = () => {
           email,
           password,
         });
-
         if (response.data.success) {
-
-
           setShowNotification(true);
           setTimeout(() => {
             localStorage.setItem('user_email', response.data.email);
             localStorage.setItem('auth_token', response.data.access_token);
+            localStorage.setItem("user_id", response.data.id); // Store the current user's ID on login
+            localStorage.setItem('message', response.data.message);
             navigate('/home');
           }, 3000);
-        } else {
-          setErrors({ ...errors, form: response.data.message });
-          console.log("Login failed:", response.data.message);
         }
       } catch (error) {
-        console.error("Login error:", error.response?.data || error);
-        setErrors({ ...errors, form: "Login failed. Please try again." });
+        if (error.response?.status === 403) {
+
+          // Tài khoản chưa được xác thực
+          // setErrors({ ...errors, form: ( error.response.data.message <>
+          //   <a
+          //     href={resendLink}
+          //     className="text-blue-500 underline"
+          //     target="_blank"
+          //     rel="noopener noreferrer"
+          //   >
+          //     Nhấn vào đây để gửi lại email xác thực
+          //   </a>
+          // </>) });
+
+          setErrors({
+            ...errors,
+            form: (
+              <>
+                Email chưa xác thực&nbsp;<Link
+                  to="/OTP"
+                  className="font-medium text-indigo-600 hover:text-indigo-500"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Xác thực ngay ?
+                </Link>
+              </>
+            ),
+          });
+        } else if (error.response?.status === 401) {
+          // Email hoặc mật khẩu sai
+          setErrors({ ...errors, form: "Email hoặc mật khẩu không đúng." });
+        } else {
+          // Lỗi khác
+          setErrors({ ...errors, form: "Đăng nhập thất bại. Vui lòng thử lại." });
+        }
       } finally {
         setLoading(false);
       }
@@ -63,9 +94,7 @@ const LoginPage = () => {
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-2xl transform transition-all hover:scale-[1.01]">
         <div className="flex flex-col justify-center items-center">
           <img className="" src={LogoUrl} alt="Logo" />
-          <p className="mt-2 text-center font-bold text-sm text-indigo-600">
-            Vui lòng đăng nhập để tiếp tục
-          </p>
+
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -145,6 +174,11 @@ const LoginPage = () => {
 
           {/* Submit Button */}
           <div>
+            {errors.form && (
+              <div className="text-red-600 text-sm mb-2">
+                {errors.form}
+              </div>
+            )}
             <button
               type="submit"
               disabled={loading || errors.email || errors.password}
@@ -197,7 +231,7 @@ const LoginPage = () => {
           </Link>
         </p>
       </div>
-      {showNotification && (<NotificationPopup />)}
+      {showNotification && (<NotificationPopup message={localStorage.getItem('message')} />)}
     </div>
   );
 };

@@ -2,27 +2,28 @@ import React, { useState, useEffect } from "react";
 import { FiCheckCircle, FiX } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 
-const NotificationPopup = ({ message = "Operation completed successfully!", duration = 5000 }) => {
+const NotificationPopup = ({ message, duration = 5000 }) => {
     const [isVisible, setIsVisible] = useState(true);
     const [progress, setProgress] = useState(100);
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsVisible(false);
-        }, duration);
+        if (message) {
+            setIsVisible(true);
+            setProgress(100); // Reset progress bar
+            const timer = setTimeout(() => {
+                setIsVisible(false);
+            }, duration);
 
-        const progressTimer = setInterval(() => {
-            setProgress((prev) => {
-                const newProgress = prev - (100 / (duration / 100));
-                return newProgress < 0 ? 0 : newProgress;
-            });
-        }, 100);
+            const progressTimer = setInterval(() => {
+                setProgress((prev) => Math.max(prev - (100 / (duration / 100)), 0));
+            }, 100);
 
-        return () => {
-            clearTimeout(timer);
-            clearInterval(progressTimer);
-        };
-    }, [duration]);
+            return () => {
+                clearTimeout(timer);
+                clearInterval(progressTimer);
+            };
+        }
+    }, [message, duration]);
 
     const handleClose = () => {
         setIsVisible(false);
@@ -36,7 +37,7 @@ const NotificationPopup = ({ message = "Operation completed successfully!", dura
 
     return (
         <AnimatePresence>
-            {isVisible && (
+            {isVisible && message && (
                 <motion.div
                     initial={{ x: -100, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
