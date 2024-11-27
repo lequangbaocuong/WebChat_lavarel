@@ -55,6 +55,11 @@ const HomePage = () => {
         const fileExtension = filePath.split('.').pop().toLowerCase();
         return imageExtensions.includes(fileExtension);
     };
+    useEffect(() => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [messages]); // 
     const handleUpload = async () => {
         if (!file || !selectedChat) return;
 
