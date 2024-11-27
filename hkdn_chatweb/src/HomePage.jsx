@@ -288,7 +288,7 @@ const HomePage = () => {
         if (selectedChat) {
             fetchMessages(selectedChat.id);  // Lấy tin nhắn từ server
         }
-    }, [selectedRoom]);
+    }, [selectedChat]);
 
 
     const handleSendMessage = async () => {
@@ -357,10 +357,10 @@ const HomePage = () => {
 
     let callWindowRef = null;
 
-    const makeCall = () => {
+    const makeCall = (useVideo) => {
         if (callWindowRef == null || callWindowRef.closed) {
             callWindowRef = window.open(
-                `${window.location.origin}/video-call?roomId=${selectedChat.id}`,
+                `${window.location.origin}/video-call?roomId=${selectedChat.id}&video=${useVideo}`,
                 'callWindow'
             );
         } else {
@@ -368,28 +368,28 @@ const HomePage = () => {
         }
     }
 
-    const fetchCallRoom = (roomId) => {
-        const token = localStorage.getItem("auth_token");
-        if (token) {
-            axios.get(`http://127.0.0.1:8000/api/room/${roomId}/get-call`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            })
-                .then(response => {
-                    setCallRoom(response.data);
-                })
-                .catch(error => {
-                    console.error("Error fetching call room:", error);
-                });
-        }
-    }
+    // const fetchCallRoom = (roomId) => {
+    //     const token = localStorage.getItem("auth_token");
+    //     if (token) {
+    //         axios.get(`http://127.0.0.1:8000/api/room/${roomId}/get-call`, {
+    //             headers: {
+    //                 Authorization: `Bearer ${token}`,
+    //             },
+    //         })
+    //             .then(response => {
+    //                 setCallRoom(response.data);
+    //             })
+    //             .catch(error => {
+    //                 console.error("Error fetching call room:", error);
+    //             });
+    //     }
+    // }
 
     useEffect(() => {
         if (selectedChat) {
             fetchMessages(selectedChat.id); // Lấy tin nhắn của nhóm đã chọn
             fetchRoomUser(selectedChat.id); // Lấy thành viên nhóm đã chọn
-            fetchCallRoom(selectedChat.id);
+            // fetchCallRoom(selectedChat.id);
         }
     }, [selectedChat]); // Lắng nghe sự thay đổi của selectedChat
 
@@ -489,8 +489,8 @@ const HomePage = () => {
                                 </div>
                             </div>
                             <div className="flex space-x-4">
-                                <MdCall onClick={() => {makeCall()}} className="text-gray-600 cursor-pointer text-lg" />
-                                <MdVideocam onClick={() => {makeCall()}} className="text-gray-600 cursor-pointer text-lg" />
+                                <MdCall onClick={() => {makeCall(false)}} className="text-gray-600 cursor-pointer text-lg" />
+                                <MdVideocam onClick={() => {makeCall(true)}} className="text-gray-600 cursor-pointer text-lg" />
                                 <BsThreeDotsVertical className="text-gray-600 cursor-pointer" onClick={toggleChatMenu} />
                                 {showChatMenu && (
                                     <div
@@ -509,7 +509,7 @@ const HomePage = () => {
                                 )}
                             </div>
                         </div>
-                        {callRoom?.participants > 0 &&
+                        {/* {callRoom?.participants > 0 &&
                         <div className="p-2 mx-4 my-2 bg-gray-50 rounded-md border border-gray-200 inline-flex items-center justify-between relative">
                             <div>
                                 <span className="hover:cursor-default text-sm font-medium border-r border-gray-300 pr-2 mr-2">Video Call</span>
@@ -517,7 +517,7 @@ const HomePage = () => {
                             </div>
                             <button onClick={() => makeCall()} type="button" className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-5 py-1">Join</button>
                         </div>
-                        }
+                        } */}
 
                         {/* Display Messages */}
                         <div className="flex-1 flex flex-col overflow-y-auto pl-4 bg-gray-50">

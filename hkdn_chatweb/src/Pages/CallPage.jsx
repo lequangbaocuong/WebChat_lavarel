@@ -10,15 +10,17 @@ const CallPage = () => {
     const [success, setSuccess] = useState(false);
     const [roomName, setRoomName] = useState('');
     const [userName, setUserName] = useState('');
+    const [videoMutedOnStart, setVideoMutedOnStart] = useState(false);
 
-    const domain = "localhost:8443";
+    const domain = "loykasjitsi.duckdns.org";
 
     const userInfo = {
         displayName: userName
     }
 
     const config = {
-        startWithAudioMuted: true,
+        // startWithAudioMuted: true,
+        startWithVideoMuted: videoMutedOnStart,
         disableModeratorIndicator: true,
         enableEmailInStats: false,
         prejoinConfig: {
@@ -149,6 +151,8 @@ const CallPage = () => {
     }
 
     const initCallRoom = async () => {
+        const video = searchParams.get('video');
+        setVideoMutedOnStart(video === 'false');
         await fetchProfile();
         fetchCallRoom();
     }
@@ -166,12 +170,10 @@ const CallPage = () => {
     }
 
     useEffect(() => {
-        
         initCallRoom();
 
-        const interval = setInterval(sendHeartbeat, 60000);
-        
-        return () => clearInterval(interval);
+        // const interval = setInterval(sendHeartbeat, 60000);
+        // return () => clearInterval(interval);
     }, []);
 
     return (
