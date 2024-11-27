@@ -43,7 +43,11 @@ class MessageController extends Controller
         }
 
         // Lấy các tin nhắn trong phòng chat, sắp xếp theo thời gian
-        $messages = $room->messages()->with('user')->orderBy('created_at', 'asc')->get();
+        $messages = $room->messages()->with('user')->orderBy('created_at', 'asc')->get()
+            ->map(function ($message) {
+                $message->file_url = $message->file_path ? asset('storage/' . $message->file_path) : null;
+                return $message;
+            });
 
         return response()->json([
             'success' => true,
@@ -149,25 +153,56 @@ class MessageController extends Controller
         ], 200);
     }
 
-    // public function markAsSeen(Request $request, Message $message)
-    // {
-    //     $user = $request->user();
+    public function uploadFile(Request $request, $roomId)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:jpg,jpeg,png,pdf,docx|max:10240', // Adjust file types as needed
+        ]);
 
-    //     // Kiểm tra xem user đã xem chưa
-    //     if (!$message->seenByUsers()->where('user_id', $user->id)->exists()) {
-    //         $message->seenByUsers()->attach($user->id);
-    //     }
-    //     Log::info('Marking message as seen', ['messageId' => $message->id, 'seenBy' => $message->seenByUsers()->get()]);
 
-    //     // Phát event
-    //     broadcast(new MessageSeen($message->id, $message->seenByUsers()->get(['id', 'username', 'avatar'])));
+        $user = Auth::user();
+        
+        // Check if the room exists
+        $room = Room::find($roomId);
+        if (!$room) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Room not found',
+            ], 404);
+        }
 
-    //     return response()->json([
-    //         'success' => true,
-    //         'message' => 'Message marked as seen.',
-    //         'seen_by' => $message->seenByUsers()->get(['id', 'username', 'avatar']),
-    //     ]);
-    // }
+        // Check if the user has access to the room
+        if (!$room->users()->where('user_id', $user->id)->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have access to this room',
+            ], 403);
+        }
+
+        // Check if file is in the request
+        if ($request->hasFile('file')) {
+            // Store the file in the storage
+            $filePath = $request->file('file')->store('uploads', 'public');
+
+            // Create a new message with the file path
+            $message = new Message();
+            $message->room_id = $roomId;
+            $message->user_id = $user->id;
+            $message->content = $request->file('file')->getClientOriginalName();
+            $message->file_path = $filePath;
+            $message->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'No file uploaded',
+        ], 400);
+    }
 
     public function markAsSeen(Message $message)
     {
@@ -191,3 +226,24 @@ class MessageController extends Controller
         return response()->json($messages);
     }
 }
+
+    // public function markAsSeen(Request $request, Message $message)
+    // {
+    //     $user = $request->user();
+
+    //     // Kiểm tra xem user đã xem chưa
+    //     if (!$message->seenByUsers()->where('user_id', $user->id)->exists()) {
+    //         $message->seenByUsers()->attach($user->id);
+    //     }
+    //     Log::info('Marking message as seen', ['messageId' => $message->id, 'seenBy' => $message->seenByUsers()->get()]);
+
+    //     // Phát event
+    //     broadcast(new MessageSeen($message->id, $message->seenByUsers()->get(['id', 'username', 'avatar'])));
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Message marked as seen.',
+    //         'seen_by' => $message->seenByUsers()->get(['id', 'username', 'avatar']),
+    //     ]);
+    // }
+
