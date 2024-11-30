@@ -4,6 +4,8 @@ import { BiLoaderAlt } from "react-icons/bi";
 import { adduser, getuser, edituser, deleteuser } from "../../api.js"
 import axios from 'axios';
 import NotificationPopup from '../../NotificationPopup.jsx'
+import { FaSync } from "react-icons/fa";
+
 const UserManagementDashboard = () => {
   const [users, setUsers] = useState([]);
   const [notice, setNotice] = useState("");
@@ -105,6 +107,27 @@ const UserManagementDashboard = () => {
     setSelectedUser(user);
     setIsDeleteModalOpen(true);
   };
+  const handleReset = async (user) => {
+    setSelectedUser(user);
+    const email = user.email;
+
+
+
+    try {
+      const response = await axios.post("http://localhost:8000/api/forgot-password", { email });
+
+      if (response.data.success) {
+        setNotificationMessage("Reset mật khẩu thành công");
+      }
+    } catch (error) {
+
+
+    } finally {
+
+    }
+
+  };
+
 
   const confirmDelete = async () => {
     const response = await deleteuser(selectedUser.id);
@@ -209,10 +232,17 @@ const UserManagementDashboard = () => {
                       </button>
                       <button
                         onClick={() => handleDelete(users)}
-                        className="text-red-600 hover:text-red-900"
+                        className="text-red-600 hover:text-red-900 mr-4"
                         aria-label="Delete user"
                       >
                         <FiTrash2 className="h-5 w-5" />
+                      </button>
+                      <button
+                        onClick={() => handleReset(users)}
+                        className="text-red-600 hover:text-red-900"
+                        aria-label="Delete user"
+                      >
+                        <FaSync className="h-5 w-5" />
                       </button>
                     </td>
                   </tr>

@@ -86,6 +86,7 @@ class MessageController extends Controller
         // Xác thực dữ liệu đầu vào
         $validator = Validator::make($request->all(), [
             'content' => 'required|string',
+         
         ]);
 
         if ($validator->fails()) {
@@ -101,6 +102,7 @@ class MessageController extends Controller
             'room_id' => $room->id,
             'user_id' => $user->id,
             'content' => $request->input('content'),
+            'file_path' => null,
         ]);
 
         // Tải lại tin nhắn với thông tin người gửi
