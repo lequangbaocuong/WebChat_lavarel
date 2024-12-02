@@ -86,7 +86,7 @@ class MessageController extends Controller
         // Xác thực dữ liệu đầu vào
         $validator = Validator::make($request->all(), [
             'content' => 'required|string',
-         
+
         ]);
 
         if ($validator->fails()) {
@@ -162,7 +162,7 @@ class MessageController extends Controller
 
 
         $user = Auth::user();
-        
+
         // Check if the room exists
         $room = Room::find($roomId);
         if (!$room) {
@@ -203,5 +203,85 @@ class MessageController extends Controller
             'success' => false,
             'message' => 'No file uploaded',
         ], 400);
+    }
+
+    public function pinMessage($roomId, $messageId)
+    {
+        $user = Auth::user();
+
+        // Kiểm tra xem phòng chat có tồn tại không
+        $room = Room::find($roomId);
+        if (!$room) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Phòng chat không tồn tại.'
+            ], 404);
+        }
+
+        // Kiểm tra nếu người dùng là creator của phòng
+        if ($room->creator_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Chỉ Moderator của phòng mới có quyền ghim tin nhắn.'
+            ], 403);
+        }
+
+        // Tìm tin nhắn cần ghim
+        $message = Message::where('room_id', $roomId)->where('id', $messageId)->first();
+        if (!$message) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tin nhắn không tồn tại.'
+            ], 404);
+        }
+
+        // Ghim tin nhắn
+        $message->pinned = true;
+        $message->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tin nhắn đã được ghim.'
+        ], 200);
+    }
+
+    public function unpinMessage($roomId, $messageId)
+    {
+        $user = Auth::user();
+
+        // Kiểm tra xem phòng chat có tồn tại không
+        $room = Room::find($roomId);
+        if (!$room) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Phòng chat không tồn tại.'
+            ], 404);
+        }
+
+        // Kiểm tra nếu người dùng là creator của phòng
+        if ($room->creator_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Chỉ Moderator của phòng mới có quyền bỏ ghim tin nhắn.'
+            ], 403);
+        }
+
+        // Tìm tin nhắn cần bỏ ghim
+        $message = Message::where('room_id', $roomId)->where('id', $messageId)->first();
+        if (!$message) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tin nhắn không tồn tại.'
+            ], 404);
+        }
+
+        // Bỏ ghim tin nhắn
+        $message->pinned = false;
+        $message->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tin nhắn đã được bỏ ghim.'
+        ], 200);
     }
 }

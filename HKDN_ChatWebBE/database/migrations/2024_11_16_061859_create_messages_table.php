@@ -13,10 +13,11 @@ return new class extends Migration
     {
         Schema::create('messages', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id'); 
-            $table->unsignedBigInteger('room_id'); 
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('room_id');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('room_id')->references('id')->on('table_rooms')->onDelete('cascade');
+            $table->boolean('is_pinned')->default(false); // Đánh dấu tin nhắn được ghim
             $table->text('content'); // Nội dung tin nhắn
             $table->timestamps();
         });

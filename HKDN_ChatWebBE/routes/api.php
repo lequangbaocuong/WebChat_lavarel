@@ -86,15 +86,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/rooms/{roomId}/messages/{messageId}', [MessageController::class, 'deleteMessage']);
     Route::post('/change-password', [UserController::class, 'changePassword']);
     Route::post('/upload-avatar', [UserController::class, 'uploadAvatar']);
-    
+
+    Route::post('/rooms/{roomId}/messages/{messageId}/pin', [MessageController::class, 'pinMessage']);
+    Route::post('/rooms/{roomId}/messages/{messageId}/unpin', [MessageController::class, 'unpinMessage']);
+
     Route::get('room/{roomID}/get-call', [VideoCallController::class, 'getCall']);
     Route::post('room/{roomID}/make-call', [VideoCallController::class, 'makeCall']);
     Route::post('room/{roomID}/leave-call', [VideoCallController::class, 'leaveCall']);
     Route::post('room/{roomID}/heartbeat', [VideoCallController::class, 'updateHeartBeat']);
 });
 //Chuyển role người dùng
- Route::put('/users/{user_id}/role', [UserController::class, 'updateRole']);
- Route::get('/room/{roomId}/users', [RoomController::class, 'getRoomUser']);
+Route::put('/users/{user_id}/role', [UserController::class, 'updateRole']);
+Route::get('/room/{roomId}/users', [RoomController::class, 'getRoomUser']);
 
 
 Route::post('/admin-reset', [UserController::class, 'resetPassword']);
