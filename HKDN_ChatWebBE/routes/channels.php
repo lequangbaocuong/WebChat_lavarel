@@ -16,4 +16,8 @@ Broadcast::channel('message-channel', function ($user) {
 });
 
 
+Broadcast::channel('room.{roomId}', function ($user, $roomId) {
+    return true; // Xác thực quyền tham gia
+});
+
 

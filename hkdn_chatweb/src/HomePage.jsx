@@ -11,7 +11,7 @@ import SidebarIcons from "./Component/SidebarIcons";
 import NotificationPopup from './Component/NotificationPopup'
 import axios from "axios";
 import GroupMemberModal from "./Component/GroupMemberModal";
-
+import Echo from "./echo"
 const HomePage = () => {
     const [selectedChat, setSelectedChat] = useState(null);
     const [message, setMessage] = useState("");
@@ -32,6 +32,7 @@ const HomePage = () => {
     const [groups, setGroups] = useState([]);
     const [isTyping, setIsTyping] = useState(false);
     const [showNotification, setShowNotification] = useState(false);
+    const [typingUsers, setTypingUsers] = useState([]);
 
     const [showMemberModal, setShowMemberModal] = useState(false);
     const [roomUsers, setRoomUsers] = useState([]);
@@ -39,11 +40,10 @@ const HomePage = () => {
     const [selectedRoom, setSelectedRoom] = useState(null);
     const [messages, setMessages] = useState([]);
     const [messageInput, setMessageInput] = useState('');
-
+    const [typingTimeout, setTypingTimeout] = useState(null);
     const [file, setFile] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
-
     const handleFileChange = (e) => {
         const selectedFile = e.target.files[0];
         if (selectedFile) {
@@ -284,12 +284,45 @@ const HomePage = () => {
 
 
     useEffect(() => {
-        if (selectedRoom) {
-            fetchMessages(selectedRoom.id);  // Lấy tin nhắn từ server
+        if (selectedChat) {
+            fetchMessages(selectedChat.id);  // Lấy tin nhắn từ server
         }
-    }, [selectedRoom]);
+    }, [selectedChat]);
 
 
+    const handleInputChange = (e) => {
+        setMessage(e.target.value);
+
+        if (!isTyping) {
+            setIsTyping(true);
+            // Phát sự kiện "đang nhập" đến server
+            window.Echo.private(`room.${selectedChat.id}`).whisper("typing", { userId: localStorage.getItem("user_id") });
+        }
+
+        // Đặt lại thời gian "ngừng nhập"
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+            setIsTyping(false);
+            // Phát sự kiện "ngừng nhập" đến server
+            window.Echo.private(`room.${selectedChat.id}`).whisper("stoppedTyping", { userId: localStorage.getItem("user_id") });
+        }, 1000); // 1 giây sau khi ngừng gõ
+    };
+
+    const handleTypingStart = () => {
+        setIsTyping(true);
+
+        // Clear timeout nếu người dùng tiếp tục nhập
+        if (typingTimeout) {
+            clearTimeout(typingTimeout);
+        }
+
+        // Đặt timeout để ngừng "đang nhập" sau 1.5 giây không nhập
+        setTypingTimeout(
+            setTimeout(() => {
+                setIsTyping(false);
+            }, 1500)
+        );
+    };   
     const handleSendMessage = async () => {
         if (!selectedChat || !messageInput.trim()) return;
 
@@ -306,11 +339,9 @@ const HomePage = () => {
             if (response.data.success) {
                 setMessages((prevMessages) => [...prevMessages, response.data.data]);  // Thêm tin nhắn mới vào state
                 setMessageInput("");
-
             }
-
-
-
+            // Ngừng trạng thái "đang nhập" khi gửi tin nhắn thành công
+            setIsTyping(false); // Tắt trạng thái đang nhập
         } catch (error) {
             console.error("Error sending message:", error.response?.data || error);
         }
@@ -532,7 +563,12 @@ const HomePage = () => {
                                 <div ref={messagesEndRef} />
                             </div>
                         </div>
-
+                        {/* Hiển thị trạng thái "đang nhập" */}
+                        {isTyping && (
+                            <div className="typing-indicator text-gray-500 italic text-sm mb-2">
+                                Đang nhập...
+                            </div>
+                        )}
                         {/* Input for Sending Messages */}
                         <div className="p-4 bg-white border-t border-gray-200 flex items-center">
                             <FiSmile className="text-gray-500 cursor-pointer mr-4" />
@@ -563,9 +599,14 @@ const HomePage = () => {
                             <input
                                 type="text"
                                 value={messageInput}
-                                onChange={(e) => setMessageInput(e.target.value)}
+                                onChange={(e) => {
+                                    setMessageInput(e.target.value);
+                                    handleTypingStart(); // Bắt đầu nhập
+                                }}
                                 onKeyUp={(e) => {
-                                    if (e.key === "Enter") handleSendMessage();
+                                    if (e.key === "Enter") {
+                                        handleSendandUpload(); // Gửi tin nhắn
+                                    }
                                 }}
                                 placeholder="Gửi tin nhắn"
                                 className="flex-1 px-4 py-2 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"

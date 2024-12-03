@@ -13,6 +13,7 @@ use App\Http\Controllers\AuthGoogleController;
 use App\Http\Controllers\VerificationController;
 use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\ForgotPasswordController;
+use Illuminate\Broadcasting\BroadcastController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -79,6 +80,7 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
 
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/broadcasting/auth', [BroadcastController::class, 'authenticate']);
     Route::get('/rooms/{roomId}/messages', [MessageController::class, 'getMessages']);
     Route::post('/rooms/{roomId}/messages', [MessageController::class, 'sendMessage']);
     Route::post('/rooms/{roomId}/upload', [MessageController::class, 'uploadFile']);
