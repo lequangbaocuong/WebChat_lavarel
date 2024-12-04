@@ -1,5 +1,4 @@
 <?php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -12,7 +11,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('messages', function (Blueprint $table) {
-            $table->string('file_path')->nullable()->default(null); // Thêm cột file_path với giá trị mặc định là 'falt'
+            $table->string('file_path')->nullable()->default(null)->change(); // Sửa cột file_path thành nullable và mặc định null
         });
     }
 
@@ -22,7 +21,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('messages', function (Blueprint $table) {
-            $table->dropColumn('file_path'); // Xóa cột file_path nếu rollback
+            $table->string('file_path')->default('falt')->change(); // Rollback về mặc định 'falt'
         });
     }
 };

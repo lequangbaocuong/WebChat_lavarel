@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { IoMdSend } from "react-icons/io";
-import { MdVideocam, MdCall } from 'react-icons/md';
+import { MdVideocam, MdCall, MdMoreVert } from 'react-icons/md';
 import { FiPaperclip, FiSmile } from "react-icons/fi";
+import { AiFillHeart } from "react-icons/ai"
 import { BsThreeDotsVertical, BsSearch } from "react-icons/bs";
 import { AiOutlineUserAdd, AiOutlineUsergroupAdd } from "react-icons/ai";
 import { FaCheck, FaExclamationCircle } from "react-icons/fa";
@@ -11,7 +12,7 @@ import SidebarIcons from "./Component/SidebarIcons";
 import NotificationPopup from './Component/NotificationPopup'
 import axios from "axios";
 import GroupMemberModal from "./Component/GroupMemberModal";
-
+import { FaSync } from "react-icons/fa";
 const HomePage = () => {
     const [selectedChat, setSelectedChat] = useState(null);
     const [message, setMessage] = useState("");
@@ -111,6 +112,7 @@ const HomePage = () => {
             );
 
             if (response.data.success) {
+                setMessages((prevMessages) => [...prevMessages, response.data.message]);
                 return response.data.message;
                 // Trả về thông tin tin nhắn đã upload
             } else {
@@ -166,7 +168,7 @@ const HomePage = () => {
         };
     }, []);
 
-    
+
     // useEffect(() => {
     //     if (selectedChat) {
     //         fetchMessages(selectedChat);
@@ -226,20 +228,12 @@ const HomePage = () => {
                 });
         }
     };
-    const handleViewProfile = () => {
-        console.log(showProfilePage);
-        setShowProfilePage(true);
-        setShowAvatarMenu(false);
-    };
+
 
     const closeProfilePage = () => {
         setShowProfilePage(false);
     };
 
-    const toggleAvatarMenu = (e) => {
-        e.stopPropagation();
-        setShowAvatarMenu((prev) => !prev);
-    };
 
     // Hàm để lấy thành viên nhóm
     const fetchRoomUser = (roomId) => {
@@ -282,12 +276,17 @@ const HomePage = () => {
         }
     };
 
-
+    // Thiết lập interval để cập nhật tin nhắn mỗi 3 giây
 
     useEffect(() => {
-        if (selectedChat) {
-            fetchMessages(selectedChat.id);  // Lấy tin nhắn từ server
-        }
+        const interval = setInterval(() => {
+            // Gọi fetchMessages mỗi 3 giây để lấy tin nhắn mới
+            if (selectedChat) {
+                fetchMessages(selectedChat.id);  // Gọi hàm để lấy tin nhắn mới
+            }
+        }, 300000); // 3 giây
+
+        return () => clearInterval(interval);
     }, [selectedChat]);
 
 
@@ -489,8 +488,8 @@ const HomePage = () => {
                                 </div>
                             </div>
                             <div className="flex space-x-4">
-                                <MdCall onClick={() => {makeCall(false)}} className="text-gray-600 cursor-pointer text-lg" />
-                                <MdVideocam onClick={() => {makeCall(true)}} className="text-gray-600 cursor-pointer text-lg" />
+                                <MdCall onClick={() => { makeCall(false) }} className="text-gray-600 cursor-pointer text-lg" />
+                                <MdVideocam onClick={() => { makeCall(true) }} className="text-gray-600 cursor-pointer text-lg" />
                                 <BsThreeDotsVertical className="text-gray-600 cursor-pointer" onClick={toggleChatMenu} />
                                 {showChatMenu && (
                                     <div
@@ -537,11 +536,7 @@ const HomePage = () => {
                                             <div
                                                 className={`max-w-[70%] rounded-lg p-3 ${isCurrentUser ? 'bg-indigo-600 text-white' : 'bg-white text-gray-900'} shadow-sm`}
                                             >
-                                                {!isCurrentUser && (
-                                                    <p className="text-sm text-gray-600 font-semibold mb-1">
-                                                        {message.user?.username || 'Unknown User'}
-                                                    </p>
-                                                )}
+                                                <p className="text-blue-500">{message.user.username}</p>
                                                 <p>{message.content}</p>
                                                 {message.file_path && (
                                                     <div className="mt-2">
@@ -563,9 +558,21 @@ const HomePage = () => {
                                                         )}
                                                     </div>
                                                 )}
-                                                <p className={`text-xs mt-1 ${isCurrentUser ? 'text-indigo-200' : 'text-gray-500'}`}>
+                                                <p className={`mb-2 text-xs mt-1 ${isCurrentUser ? 'text-indigo-200' : 'text-gray-500'}`}>
                                                     {new Date(message.created_at).toLocaleTimeString()}
                                                 </p>
+
+                                                <div className="flex space-x-4">
+
+
+                                                    {/* Nút trái tim */}
+                                                    <button className="w-5 h-5 flex items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-red-500 shadow-lg hover:from-pink-600 hover:to-red-600 transform hover:scale-110 transition">
+                                                        <AiFillHeart size={15} className="text-white" />
+                                                    </button>
+                                                    <button className="w-5 h-5 flex items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-blue-500 shadow-lg hover:from-purple-600 hover:to-blue-600 transform hover:scale-110 transition">
+                                                        <MdMoreVert size={15} className="text-white" />
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     );
