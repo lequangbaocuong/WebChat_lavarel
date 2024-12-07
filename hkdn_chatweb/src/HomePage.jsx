@@ -326,20 +326,44 @@ const HomePage = () => {
     };   
     const handleSendMessage = async () => {
         if (!selectedChat || !messageInput.trim()) return;
+        
+        const currentUserId = localStorage.getItem("user_id");
+        let message = {
+            id: 0,
+            user_id: currentUserId,
+            room_id: selectedChat.id,
+            content: messageInput,
+            created_at: "",
+            updated_at: "",
+            type: "text",
+            file_path: null,
+            user: {
+                id: currentUserId,
+            }
+        }
+        let messageClones = [...messages];
+        messageClones.push(message);
+
+        setMessages((prevMessages) => [...prevMessages, message]);
+        setMessageInput("");
 
         const token = localStorage.getItem("auth_token");
         try {
             const response = await axios.post(
                 `http://localhost:8000/api/rooms/${selectedChat.id}/messages`,
                 { content: messageInput },
-                { headers: { Authorization: `Bearer ${token}` } }
+                { headers: { Authorization: `Bearer ${token}`, "X-Socket-ID": window.Echo.socketId() } }
             );
 
             console.log(response.data); // Kiểm tra dữ liệu phản hồi
 
             if (response.data.success) {
-                setMessages((prevMessages) => [...prevMessages, response.data.data]);  // Thêm tin nhắn mới vào state
-                setMessageInput("");
+                message.id = response.data.data.id;
+                message.created_at = response.data.data.created_at;
+                message.updated_at = response.data.data.updated_at;
+                setMessages(messageClones);
+                // setMessages((prevMessages) => [...prevMessages, response.data.data]);  // Thêm tin nhắn mới vào state
+                // setMessageInput("");
             }
             // Ngừng trạng thái "đang nhập" khi gửi tin nhắn thành công
             setIsTyping(false); // Tắt trạng thái đang nhập
@@ -348,6 +372,18 @@ const HomePage = () => {
         }
     };
 
+    const syncMessage = async (e) => {
+        setMessages((prevMessages) => [...prevMessages, e.message]);
+    }
+
+    useEffect(() => {
+        if (selectedChat) {
+            window.Echo.private(`room.${selectedChat.id}`)
+                .listen("MessageCreated", (e) => {
+                    syncMessage(e)
+                })
+        }
+    }, [selectedChat])
 
 
     function addRoomUsers(newUsers) {
@@ -464,9 +500,9 @@ const HomePage = () => {
                     </div>
                 </div>
                 <div className="overflow-y-auto h-[calc(100vh-180px)]">
-                    {groups.map((group) => (
+                    {groups.map((group, index) => (
                         <div
-                            key={group.id}
+                            key={index}
                             onClick={() => setSelectedChat(group)}
                             className={`flex items-center p-4 cursor-pointer hover:bg-gray-50 ${selectedChat?.id === group.id ? "bg-gray-50" : ""
                                 }`}
@@ -559,6 +595,7 @@ const HomePage = () => {
                                 {messages.map((message) => {
                                     const currentUserId = localStorage.getItem("user_id");
                                     const isCurrentUser = Number(message.user_id) === Number(currentUserId);
+                                    const isSending = message.created_at === "";
 
                                     return (
                                         <div
@@ -595,7 +632,9 @@ const HomePage = () => {
                                                     </div>
                                                 )}
                                                 <p className={`text-xs mt-1 ${isCurrentUser ? 'text-indigo-200' : 'text-gray-500'}`}>
-                                                    {new Date(message.created_at).toLocaleTimeString()}
+                                                    {
+                                                        isSending ? "Sending" : new Date(message.created_at).toLocaleTimeString()
+                                                    }
                                                 </p>
                                             </div>
                                         </div>

@@ -5,12 +5,12 @@ window.Pusher = Pusher;
 
 window.Echo = new Echo({
     broadcaster: 'reverb',
-    key: 'rdjhkf1ndhphxm6vzske',
-    wsHost: "127.0.0.1",
-    wsPort: "127.0.0.1" ?? 80,
-    wssPort: "127.0.0.1" ?? 443,
-    forceTLS: ('http' ?? 'https') === 'https',
-    authEndpoint: "http://127.0.0.1:8000/api" + "/broadcasting/auth",
+    key: process.env.REACT_APP_REVERB_APP_KEY,
+    wsHost: process.env.REACT_APP_REVERB_HOST,
+    wsPort: process.env.REACT_APP_REVERB_PORT ?? 80,
+    wssPort: process.env.REACT_APP_REVERB_PORT ?? 443,
+    forceTLS: (process.env.REACT_APP_REVERB_SCHEME ?? 'https') === 'https',
+    authEndpoint: process.env.REACT_APP_API_PATH + "/broadcasting/auth",
     enabledTransports: ['ws', 'wss'],
     auth: {
         headers: {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\MessageCreated;
 use App\Models\Room;
 use App\Models\Message;
 use App\Events\MessageSeen;
@@ -107,6 +108,8 @@ class MessageController extends Controller
         // Tải lại tin nhắn với thông tin người gửi
         $message->load('user');
 
+        broadcast(new MessageCreated($roomId, $message))->toOthers();
+
         return response()->json([
             'success' => true,
             'message' => 'Tin nhắn đã được gửi.',
@@ -191,6 +194,9 @@ class MessageController extends Controller
             $message->content = $request->file('file')->getClientOriginalName();
             $message->file_path = $filePath;
             $message->save();
+            $message->load('user');
+
+            broadcast(new MessageCreated($roomId, $message))->toOthers();
 
             return response()->json([
                 'success' => true,
