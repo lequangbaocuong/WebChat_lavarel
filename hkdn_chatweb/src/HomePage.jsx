@@ -79,11 +79,11 @@ const HomePage = () => {
             // Clear file input after upload
             // Bạn có thể cập nhật thêm trạng thái hoặc thực hiện hành động khác sau khi upload thành công
             console.log('File uploaded successfully:', uploadedMessage);
+            setMessages((prevMessages) => [...prevMessages, uploadedMessage]);
         } catch (error) {
             console.error("Error during file upload:", error.message);
             // Có thể hiển thị thông báo lỗi cho người dùng ở đây
         } finally {
-
             setUploading(false);
         }
     };
@@ -105,6 +105,7 @@ const HomePage = () => {
                     headers: {
                         Authorization: `Bearer ${token}`,
                         "Content-Type": "multipart/form-data",
+                        "X-Socket-ID": window.Echo.socketId()
                     },
                     onUploadProgress: onProgress, // Theo dõi tiến độ upload
                 }
