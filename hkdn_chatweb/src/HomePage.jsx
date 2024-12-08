@@ -39,7 +39,7 @@ const HomePage = () => {
 
     const [messages, setMessages] = useState([]);
     const [messageInput, setMessageInput] = useState('');
-
+    const [formPosition, setFormPosition] = useState({ top: 0, left: 0 });
     const [callRoom, setCallRoom] = useState(null);
 
     const [file, setFile] = useState(null);
@@ -129,7 +129,26 @@ const HomePage = () => {
         console.log("Current User ID:", currentUserId);
         console.log("Messages:", messages);
     }, [messages]); // Kiểm tra mỗi khi messages thay đổi
-
+    const buttonRefs = useRef({});
+    const [activeMessage, setActiveMessage] = useState(null);
+    const [showOptions, setShowOptions] = useState(null);
+    const moreButtonRef = useRef(null);
+    const toggleOptions = (messageId) => {
+        if (activeMessage === messageId) {
+            // Đóng form nếu đã mở
+            setActiveMessage(null);
+        } else {
+            const button = buttonRefs.current[messageId];
+            if (button) {
+                const rect = button.getBoundingClientRect();
+                setFormPosition({
+                    top: rect.top + window.scrollY, // Thêm scrollY để tính chính xác trong viewport
+                    left: rect.left - 120 - 8, // Hiển thị form bên cạnh nút
+                });
+            }
+            setActiveMessage(messageId); // Mở form cho tin nhắn này
+        }
+    };
 
 
     useEffect(() => {
@@ -284,7 +303,7 @@ const HomePage = () => {
             if (selectedChat) {
                 fetchMessages(selectedChat.id);  // Gọi hàm để lấy tin nhắn mới
             }
-        }, 300000); // 3 giây
+        }, 30000); // 3 giây
 
         return () => clearInterval(interval);
     }, [selectedChat]);
@@ -534,9 +553,9 @@ const HomePage = () => {
                                             className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-4`}
                                         >
                                             <div
-                                                className={`max-w-[70%] rounded-lg p-3 ${isCurrentUser ? 'bg-indigo-600 text-white' : 'bg-white text-gray-900'} shadow-sm`}
+                                                className={`max-w-[70%] rounded-lg p-3 ${isCurrentUser ? 'bg-indigo-600 text-white' : 'bg-white text-gray-900'} shadow-sm   `}
                                             >
-                                                <p className="text-blue-500">{message.user.username}</p>
+                                                {/* <p className="text-blue-500">{message.user.username}</p> */}
                                                 <p>{message.content}</p>
                                                 {message.file_path && (
                                                     <div className="mt-2">
@@ -569,9 +588,36 @@ const HomePage = () => {
                                                     <button className="w-5 h-5 flex items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-red-500 shadow-lg hover:from-pink-600 hover:to-red-600 transform hover:scale-110 transition">
                                                         <AiFillHeart size={15} className="text-white" />
                                                     </button>
-                                                    <button className="w-5 h-5 flex items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-blue-500 shadow-lg hover:from-purple-600 hover:to-blue-600 transform hover:scale-110 transition">
+                                                    <button
+                                                        ref={(el) => (buttonRefs.current[message.id] = el)} // Gắn ref cho nút More
+                                                        onClick={() => toggleOptions(message.id)}
+                                                        className="w-5 h-5 flex items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-blue-500 shadow-lg hover:from-purple-600 hover:to-blue-600 transform hover:scale-110 transition"
+                                                    >
                                                         <MdMoreVert size={15} className="text-white" />
                                                     </button>
+                                                    {activeMessage && (
+                                                        <div
+                                                            style={{
+                                                                position: "fixed",
+                                                                top: `${formPosition.top}px`,
+                                                                left: `${formPosition.left}px`,
+                                                            }}
+                                                            className="bg-white border shadow-md rounded-lg py-2 px-4 z-50"
+                                                        >
+                                                            <button
+                                                                className="block text-sm text-gray-700 hover:bg-gray-200 px-2 py-1 rounded"
+                                                                onClick={() => console.log("Pin message")}
+                                                            >
+                                                                Ghim
+                                                            </button>
+                                                            <button
+                                                                className="block text-sm text-gray-700 hover:bg-gray-200 px-2 py-1 rounded"
+                                                                onClick={() => console.log("Recall message")}
+                                                            >
+                                                                Thu hồi
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
