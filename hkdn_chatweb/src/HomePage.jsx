@@ -12,7 +12,11 @@ import SidebarIcons from "./Component/SidebarIcons";
 import NotificationPopup from './Component/NotificationPopup'
 import axios from "axios";
 import GroupMemberModal from "./Component/GroupMemberModal";
+
 import { FaSync } from "react-icons/fa";
+
+import Echo from "./echo"
+
 const HomePage = () => {
     const [selectedChat, setSelectedChat] = useState(null);
     const [message, setMessage] = useState("");
@@ -33,6 +37,7 @@ const HomePage = () => {
     const [groups, setGroups] = useState([]);
     const [isTyping, setIsTyping] = useState(false);
     const [showNotification, setShowNotification] = useState(false);
+    const [typingUsers, setTypingUsers] = useState([]);
 
     const [showMemberModal, setShowMemberModal] = useState(false);
     const [roomUsers, setRoomUsers] = useState([]);
@@ -41,11 +46,10 @@ const HomePage = () => {
     const [messageInput, setMessageInput] = useState('');
 
     const [callRoom, setCallRoom] = useState(null);
-
+    const [typingTimeout, setTypingTimeout] = useState(null);
     const [file, setFile] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
-
     const handleFileChange = (e) => {
         const selectedFile = e.target.files[0];
         if (selectedFile) {
@@ -80,11 +84,11 @@ const HomePage = () => {
             // Clear file input after upload
             // Bạn có thể cập nhật thêm trạng thái hoặc thực hiện hành động khác sau khi upload thành công
             console.log('File uploaded successfully:', uploadedMessage);
+            setMessages((prevMessages) => [...prevMessages, uploadedMessage]);
         } catch (error) {
             console.error("Error during file upload:", error.message);
             // Có thể hiển thị thông báo lỗi cho người dùng ở đây
         } finally {
-
             setUploading(false);
         }
     };
@@ -106,6 +110,7 @@ const HomePage = () => {
                     headers: {
                         Authorization: `Bearer ${token}`,
                         "Content-Type": "multipart/form-data",
+                        "X-Socket-ID": window.Echo.socketId()
                     },
                     onUploadProgress: onProgress, // Theo dõi tiến độ upload
                 }
@@ -290,32 +295,99 @@ const HomePage = () => {
     }, [selectedChat]);
 
 
+    const handleInputChange = (e) => {
+        setMessage(e.target.value);
+
+        if (!isTyping) {
+            setIsTyping(true);
+            // Phát sự kiện "đang nhập" đến server
+            window.Echo.private(`room.${selectedChat.id}`).whisper("typing", { userId: localStorage.getItem("user_id") });
+        }
+
+        // Đặt lại thời gian "ngừng nhập"
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+            setIsTyping(false);
+            // Phát sự kiện "ngừng nhập" đến server
+            window.Echo.private(`room.${selectedChat.id}`).whisper("stoppedTyping", { userId: localStorage.getItem("user_id") });
+        }, 1000); // 1 giây sau khi ngừng gõ
+    };
+
+    const handleTypingStart = () => {
+        setIsTyping(true);
+
+        // Clear timeout nếu người dùng tiếp tục nhập
+        if (typingTimeout) {
+            clearTimeout(typingTimeout);
+        }
+
+        // Đặt timeout để ngừng "đang nhập" sau 1.5 giây không nhập
+        setTypingTimeout(
+            setTimeout(() => {
+                setIsTyping(false);
+            }, 1500)
+        );
+    };
     const handleSendMessage = async () => {
         if (!selectedChat || !messageInput.trim()) return;
+
+        const currentUserId = localStorage.getItem("user_id");
+        let message = {
+            id: 0,
+            user_id: currentUserId,
+            room_id: selectedChat.id,
+            content: messageInput,
+            created_at: "",
+            updated_at: "",
+            type: "text",
+            file_path: null,
+            user: {
+                id: currentUserId,
+            }
+        }
+        let messageClones = [...messages];
+        messageClones.push(message);
+
+        setMessages((prevMessages) => [...prevMessages, message]);
+        setMessageInput("");
 
         const token = localStorage.getItem("auth_token");
         try {
             const response = await axios.post(
                 `http://localhost:8000/api/rooms/${selectedChat.id}/messages`,
                 { content: messageInput },
-                { headers: { Authorization: `Bearer ${token}` } }
+                { headers: { Authorization: `Bearer ${token}`, "X-Socket-ID": window.Echo.socketId() } }
             );
 
             console.log(response.data); // Kiểm tra dữ liệu phản hồi
 
             if (response.data.success) {
-                setMessages((prevMessages) => [...prevMessages, response.data.data]);  // Thêm tin nhắn mới vào state
-                setMessageInput("");
-
+                message.id = response.data.data.id;
+                message.created_at = response.data.data.created_at;
+                message.updated_at = response.data.data.updated_at;
+                setMessages(messageClones);
+                // setMessages((prevMessages) => [...prevMessages, response.data.data]);  // Thêm tin nhắn mới vào state
+                // setMessageInput("");
             }
-
-
-
+            // Ngừng trạng thái "đang nhập" khi gửi tin nhắn thành công
+            setIsTyping(false); // Tắt trạng thái đang nhập
         } catch (error) {
             console.error("Error sending message:", error.response?.data || error);
         }
     };
 
+    const syncMessage = async (e) => {
+        setMessages((prevMessages) => [...prevMessages, e.message]);
+    }
+
+    useEffect(() => {
+        if (selectedChat) {
+            window.Echo.private(`room.${selectedChat.id}`)
+                .listen("MessageCreated", (e) => {
+                    syncMessage(e)
+                })
+        }
+    }, [selectedChat])
 
 
     function addRoomUsers(newUsers) {
@@ -432,9 +504,9 @@ const HomePage = () => {
                     </div>
                 </div>
                 <div className="overflow-y-auto h-[calc(100vh-180px)]">
-                    {groups.map((group) => (
+                    {groups.map((group, index) => (
                         <div
-                            key={group.id}
+                            key={index}
                             onClick={() => setSelectedChat(group)}
                             className={`flex items-center p-4 cursor-pointer hover:bg-gray-50 ${selectedChat?.id === group.id ? "bg-gray-50" : ""
                                 }`}
@@ -527,6 +599,7 @@ const HomePage = () => {
                                 {messages.map((message) => {
                                     const currentUserId = localStorage.getItem("user_id");
                                     const isCurrentUser = Number(message.user_id) === Number(currentUserId);
+                                    const isSending = message.created_at === "";
 
                                     return (
                                         <div
@@ -536,7 +609,12 @@ const HomePage = () => {
                                             <div
                                                 className={`max-w-[70%] rounded-lg p-3 ${isCurrentUser ? 'bg-indigo-600 text-white' : 'bg-white text-gray-900'} shadow-sm`}
                                             >
-                                                <p className="text-blue-500">{message.user.username}</p>
+
+                                                {!isCurrentUser && (
+                                                    <p className="text-sm text-gray-600 font-semibold mb-1">
+                                                        {message.user?.username || 'Unknown User'}
+                                                    </p>
+                                                )}
                                                 <p>{message.content}</p>
                                                 {message.file_path && (
                                                     <div className="mt-2">
@@ -558,8 +636,12 @@ const HomePage = () => {
                                                         )}
                                                     </div>
                                                 )}
-                                                <p className={`mb-2 text-xs mt-1 ${isCurrentUser ? 'text-indigo-200' : 'text-gray-500'}`}>
-                                                    {new Date(message.created_at).toLocaleTimeString()}
+
+                                                <p className={`text-xs mt-1 ${isCurrentUser ? 'text-indigo-200' : 'text-gray-500'}`}>
+                                                    {
+                                                        isSending ? "Sending" : new Date(message.created_at).toLocaleTimeString()
+                                                    }
+
                                                 </p>
 
                                                 <div className="flex space-x-4">
@@ -574,13 +656,20 @@ const HomePage = () => {
                                                     </button>
                                                 </div>
                                             </div>
-                                        </div>
+                                        </div >
                                     );
                                 })}
                                 <div ref={messagesEndRef} />
-                            </div>
-                        </div>
-
+                            </div >
+                        </div >
+                        {/* Hiển thị trạng thái "đang nhập" */}
+                        {
+                            isTyping && (
+                                <div className="typing-indicator text-gray-500 italic text-sm mb-2">
+                                    Đang nhập...
+                                </div>
+                            )
+                        }
                         {/* Input for Sending Messages */}
                         <div className="p-4 bg-white border-t border-gray-200 flex items-center">
                             <FiSmile className="text-gray-500 cursor-pointer mr-4" />
@@ -611,9 +700,14 @@ const HomePage = () => {
                             <input
                                 type="text"
                                 value={messageInput}
-                                onChange={(e) => setMessageInput(e.target.value)}
+                                onChange={(e) => {
+                                    setMessageInput(e.target.value);
+                                    handleTypingStart(); // Bắt đầu nhập
+                                }}
                                 onKeyUp={(e) => {
-                                    if (e.key === "Enter") handleSendMessage();
+                                    if (e.key === "Enter") {
+                                        handleSendandUpload(); // Gửi tin nhắn
+                                    }
                                 }}
                                 placeholder="Gửi tin nhắn"
                                 className="flex-1 px-4 py-2 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"

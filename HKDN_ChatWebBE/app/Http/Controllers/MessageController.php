@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\SendMessageRequest;
-use App\Models\Message;
+use App\Events\MessageCreated;
 use App\Models\Room;
+use App\Models\Message;
+use App\Events\MessageSeen;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\SendMessageRequest;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log; // Add this line
 
@@ -108,6 +110,8 @@ class MessageController extends Controller
         // Tải lại tin nhắn với thông tin người gửi
         $message->load('user');
 
+        broadcast(new MessageCreated($roomId, $message))->toOthers();
+
         return response()->json([
             'success' => true,
             'message' => 'Tin nhắn đã được gửi.',
@@ -192,6 +196,9 @@ class MessageController extends Controller
             $message->content = $request->file('file')->getClientOriginalName();
             $message->file_path = $filePath;
             $message->save();
+            $message->load('user');
+
+            broadcast(new MessageCreated($roomId, $message))->toOthers();
 
             return response()->json([
                 'success' => true,
@@ -204,4 +211,47 @@ class MessageController extends Controller
             'message' => 'No file uploaded',
         ], 400);
     }
+
+    public function markAsSeen(Message $message)
+    {
+        // Kiểm tra nếu user đã đăng nhập
+        $user = Auth::user();
+        
+        // Kiểm tra nếu message chưa được user này đánh dấu là "đã xem"
+        if (!$message->seenByUsers()->where('user_id', $user->id)->exists()) {
+            $message->seenByUsers()->attach($user->id);
+        }
+
+        return response()->json([
+            'message' => 'Message marked as seen',
+            'seenByUsers' => $message->seenByUsers,
+        ]);
+    }
+
+    public function index()
+    {
+        $messages = Message::with('seenByUsers')->get();
+        return response()->json($messages);
+    }
 }
+
+    // public function markAsSeen(Request $request, Message $message)
+    // {
+    //     $user = $request->user();
+
+    //     // Kiểm tra xem user đã xem chưa
+    //     if (!$message->seenByUsers()->where('user_id', $user->id)->exists()) {
+    //         $message->seenByUsers()->attach($user->id);
+    //     }
+    //     Log::info('Marking message as seen', ['messageId' => $message->id, 'seenBy' => $message->seenByUsers()->get()]);
+
+    //     // Phát event
+    //     broadcast(new MessageSeen($message->id, $message->seenByUsers()->get(['id', 'username', 'avatar'])));
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Message marked as seen.',
+    //         'seen_by' => $message->seenByUsers()->get(['id', 'username', 'avatar']),
+    //     ]);
+    // }
+
