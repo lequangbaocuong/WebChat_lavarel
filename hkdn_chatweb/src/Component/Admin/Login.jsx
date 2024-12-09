@@ -12,7 +12,7 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await login('htrhieu2003@gmail.com', password);
+      const response = await login('lequangbaocuong@gmail.com', password);
       if (response?.success) {
         localStorage.setItem('adminToken', response.access_token);
         localStorage.setItem('email', response.email);

@@ -1,5 +1,7 @@
 import React from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import { FaTachometerAlt, FaUserCog, FaDoorClosed, FaKey, FaSignOutAlt } from "react-icons/fa";
+
 
 const AdminLayout = () => {
   const navigate = useNavigate();
@@ -14,57 +16,60 @@ const AdminLayout = () => {
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
-      <div className="w-64  bg-indigo-600 text-white flex flex-col">
-        <div className="p-4 text-2xl font-bold"><img className="mx-auto" src="/HKDN.png" /></div>
-        <div className="p-4 text-2xl font-bold mx-auto">Quản Lý</div>
+      <div className="w-64 bg-gradient-to-b from-indigo-700 to-indigo-900 text-white flex flex-col shadow-lg">
+        <div className="p-6 text-center">
+          <img className="mx-auto mb-4 w-24" src="/HKDN.png" alt="Logo" />
+          <h2 className="text-2xl font-extrabold uppercase tracking-normal">Quản Lý</h2>
+        </div>
 
         <nav className="flex-1">
           <NavLink
             to="/admin"
             className={({ isActive }) =>
-              isActive
-                ? "block py-2.5 px-4 bg-indigo-600"
-                : "block py-2.5 px-4 hover:bg-indigo-600"
+              `flex items-center py-3 px-5 transition-all duration-200 ${
+                isActive ? "bg-indigo-600" : "hover:bg-indigo-700"
+              }`
             }
           >
-            Dashboard
+            <FaTachometerAlt className="mr-3" /> Dashboard
           </NavLink>
           <NavLink
             to="/admin/users"
             className={({ isActive }) =>
-              isActive
-                ? "block py-2.5 px-4 bg-purple-600"
-                : "block py-2.5 px-4 hover:bg-purple-600"
+              `flex items-center py-3 px-5 transition-all duration-200 ${
+                isActive ? "bg-indigo-600" : "hover:bg-indigo-700"
+              }`
             }
           >
-            Quản Lý Người Dùng
+            <FaUserCog className="mr-3" /> Quản Lý Người Dùng
           </NavLink>
           <NavLink
             to="/admin/rooms"
             className={({ isActive }) =>
-              isActive
-                ? "block py-2.5 px-4 bg-purple-600"
-                : "block py-2.5 px-4 hover:bg-purple-600"
+              `flex items-center py-3 px-5 transition-all duration-200 ${
+                isActive ? "bg-indigo-600" : "hover:bg-indigo-700"
+              }`
             }
           >
-            Quản Lý Phòng
+            <FaDoorClosed className="mr-3" /> Quản Lý Phòng
           </NavLink>
           <NavLink
             to="/admin/changepass"
             className={({ isActive }) =>
-              isActive
-                ? "block py-2.5 px-4 bg-purple-600"
-                : "block py-2.5 px-4 hover:bg-purple-600"
+              `flex items-center py-3 px-5 transition-all duration-200 ${
+                isActive ? "bg-indigo-600" : "hover:bg-indigo-700"
+              }`
             }
           >
-            Đổi Mật Khẩu
+            <FaKey className="mr-3" /> Đổi Mật Khẩu
           </NavLink>
         </nav>
+
         <button
           onClick={handleLogout}
-          className="w-full text-left py-2.5 px-4 hover:bg-purple-600"
+          className="flex items-center w-full py-3 px-5 text-left hover:bg-red-600 transition-all duration-200"
         >
-          Đăng Xuất
+          <FaSignOutAlt className="mr-3" /> Đăng Xuất
         </button>
       </div>
 
