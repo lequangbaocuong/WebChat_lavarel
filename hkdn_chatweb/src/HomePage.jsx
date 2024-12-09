@@ -284,7 +284,7 @@ const HomePage = () => {
             if (selectedChat) {
                 fetchMessages(selectedChat.id);  // Gọi hàm để lấy tin nhắn mới
             }
-        }, 300000); // 3 giây
+        }, 30000); // 3 giây
 
         return () => clearInterval(interval);
     }, [selectedChat]);
