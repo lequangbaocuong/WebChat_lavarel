@@ -56,6 +56,12 @@ export const login = async (email, password) => {
     const response = await api.post('/login', { email, password });
     return response.data;
 };
+
+export const loginAdmin = async (email, password) => {
+    const response = await api.post('/login_admin', { email, password });
+    return response.data;
+};
+
 export const changepass = async (email, old_password, new_password, new_password_confirmation) => {
     const response = await api.post(`/admin/change-password`, { email, old_password, new_password, new_password_confirmation });
     return response.data;

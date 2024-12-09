@@ -94,3 +94,6 @@ Route::middleware('auth:sanctum')->group(function () {
  
  Route::post('/user/profile', [UserController::class, 'getProfile']);
  Route::post('/user/update', [UserController::class, 'updateprofile']);
+
+
+Route::post('/login_admin', [UserController::class, 'login_admin']);
