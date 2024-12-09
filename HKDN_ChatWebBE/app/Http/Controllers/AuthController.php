@@ -89,7 +89,7 @@ class AuthController extends Controller
        
         return response()->json([
             'success' => true,
-            'message' => 'Login successful',
+            'message' => 'Đăng nhập thành công',
             'access_token' => $token,
             'token_type' => 'Bearer',
             'email' => $user->email, // Include email in the response
