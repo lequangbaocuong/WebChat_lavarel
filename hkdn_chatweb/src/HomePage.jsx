@@ -8,11 +8,13 @@ import { AiOutlineUserAdd, AiOutlineUsergroupAdd } from "react-icons/ai";
 import { FaCheck, FaExclamationCircle } from "react-icons/fa";
 import IntroPage from "./Component/IntroductionPage";
 import Profile from "./Component/ProfilePage";
+import { BiPin } from "react-icons/bi";
 import SidebarIcons from "./Component/SidebarIcons";
 import NotificationPopup from './Component/NotificationPopup'
 import axios from "axios";
 import GroupMemberModal from "./Component/GroupMemberModal";
 import { FaSync } from "react-icons/fa";
+import PinnedMessagesForm from "./Component/PinnedMessagesForm";
 const HomePage = () => {
     const [selectedChat, setSelectedChat] = useState(null);
     const [message, setMessage] = useState("");
@@ -33,7 +35,7 @@ const HomePage = () => {
     const [groups, setGroups] = useState([]);
     const [isTyping, setIsTyping] = useState(false);
     const [showNotification, setShowNotification] = useState(false);
-
+    const [username, setUsername] = useState('');
     const [showMemberModal, setShowMemberModal] = useState(false);
     const [roomUsers, setRoomUsers] = useState([]);
 
@@ -112,7 +114,8 @@ const HomePage = () => {
             );
 
             if (response.data.success) {
-                setMessages((prevMessages) => [...prevMessages, response.data.message]);
+
+                setMessages((prevMessages) => [...prevMessages, response.data.data]);
                 return response.data.message;
                 // Trả về thông tin tin nhắn đã upload
             } else {
@@ -188,12 +191,7 @@ const HomePage = () => {
     }, []);
 
 
-    // useEffect(() => {
-    //     if (selectedChat) {
-    //         fetchMessages(selectedChat);
-    //         fetchRoomUser();
-    //     }
-    // }, [selectedChat]);
+
 
     const handleKeyPress = (e) => {
         if (e.key === "Enter" && !e.shiftKey) {
@@ -294,6 +292,41 @@ const HomePage = () => {
             console.error("Error fetching messages:", error.message);
         }
     };
+    const pinMessage = async (messageId) => {
+        const token = localStorage.getItem("auth_token");
+
+        try {
+            // Gửi yêu cầu pin tin nhắn
+            const response = await axios.post(
+                `http://localhost:8000/api/rooms/${selectedChat.id}/messages/${messageId}/pin`,
+                {}, // Dữ liệu gửi đi nếu cần (trong trường hợp này là một object rỗng)
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            // Kiểm tra nếu pin thành công
+            if (response.data.success) {
+                setMessages((prevMessages) =>
+                    prevMessages.map((message) =>
+                        message.id === messageId
+                            ? { ...message, pinned: true } // Đánh dấu tin nhắn đã ghim
+                            : message
+                    )
+                );
+                setActiveMessage(null); // Đóng form nếu có
+            } else {
+                console.error("Không thể ghim tin nhắn");
+            }
+        } catch (err) {
+            console.error("Lỗi khi ghim tin nhắn:", err);
+        }
+    };
+
+
+
 
     // Thiết lập interval để cập nhật tin nhắn mỗi 3 giây
 
@@ -386,22 +419,6 @@ const HomePage = () => {
         }
     }
 
-    // const fetchCallRoom = (roomId) => {
-    //     const token = localStorage.getItem("auth_token");
-    //     if (token) {
-    //         axios.get(`http://127.0.0.1:8000/api/room/${roomId}/get-call`, {
-    //             headers: {
-    //                 Authorization: `Bearer ${token}`,
-    //             },
-    //         })
-    //             .then(response => {
-    //                 setCallRoom(response.data);
-    //             })
-    //             .catch(error => {
-    //                 console.error("Error fetching call room:", error);
-    //             });
-    //     }
-    // }
 
     useEffect(() => {
         if (selectedChat) {
@@ -422,6 +439,15 @@ const HomePage = () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, []);
+    const [isFormVisible, setFormVisible] = useState(false);
+    const handleShowForm = (roomId) => {
+        console.log(roomId);
+        setFormVisible(true); // Hiển thị form
+    };
+    const handleCloseForm = () => {
+        fetchMessages(selectedChat.id);
+        setFormVisible(false); // Ẩn form
+    };
 
     return (
         <div className="flex h-full">
@@ -507,9 +533,17 @@ const HomePage = () => {
                                 </div>
                             </div>
                             <div className="flex space-x-4">
+                                <BiPin onClick={() => handleShowForm(selectedChat.id)} size={22} className="text-gray-600 cursor-pointer text-lg" />
+                                {isFormVisible && (
+                                    <PinnedMessagesForm
+                                        roomId={selectedChat.id} // Truyền ID phòng sang form
+                                        onClose={handleCloseForm} // Đóng form
+                                    />
+                                )}
                                 <MdCall onClick={() => { makeCall(false) }} className="text-gray-600 cursor-pointer text-lg" />
                                 <MdVideocam onClick={() => { makeCall(true) }} className="text-gray-600 cursor-pointer text-lg" />
                                 <BsThreeDotsVertical className="text-gray-600 cursor-pointer" onClick={toggleChatMenu} />
+
                                 {showChatMenu && (
                                     <div
                                         ref={chatMenuRef}
@@ -527,15 +561,6 @@ const HomePage = () => {
                                 )}
                             </div>
                         </div>
-                        {/* {callRoom?.participants > 0 &&
-                        <div className="p-2 mx-4 my-2 bg-gray-50 rounded-md border border-gray-200 inline-flex items-center justify-between relative">
-                            <div>
-                                <span className="hover:cursor-default text-sm font-medium border-r border-gray-300 pr-2 mr-2">Video Call</span>
-                                <span className="hover:cursor-default text-sm">{callRoom.participants} participants</span>
-                            </div>
-                            <button onClick={() => makeCall()} type="button" className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-5 py-1">Join</button>
-                        </div>
-                        } */}
 
                         {/* Display Messages */}
                         <div className="flex-1 flex flex-col overflow-y-auto pl-4 bg-gray-50">
@@ -553,9 +578,14 @@ const HomePage = () => {
                                             className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-4`}
                                         >
                                             <div
-                                                className={`max-w-[70%] rounded-lg p-3 ${isCurrentUser ? 'bg-indigo-600 text-white' : 'bg-white text-gray-900'} shadow-sm   `}
+                                                className={`max-w-[70%] rounded-lg p-3 shadow-sm ${isCurrentUser
+                                                    ? 'bg-indigo-600 text-white'
+                                                    : 'bg-white text-gray-900'
+                                                    } ${message.is_pinned ? 'border-2 border-yellow-400' : ''}`}
                                             >
-                                                {/* <p className="text-blue-500">{message.user.username}</p> */}
+                                                <p className="text-blue-500">
+                                                    {message.user.username ? message.user.username : localStorage.getItem("username")}
+                                                </p>
                                                 <p>{message.content}</p>
                                                 {message.file_path && (
                                                     <div className="mt-2">
@@ -605,10 +635,12 @@ const HomePage = () => {
                                                             className="bg-white border shadow-md rounded-lg py-2 px-4 z-50"
                                                         >
                                                             <button
+                                                                onClick={() => pinMessage(message.id)}
                                                                 className="block text-sm text-gray-700 hover:bg-gray-200 px-2 py-1 rounded"
-                                                                onClick={() => console.log("Pin message")}
+
                                                             >
                                                                 Ghim
+
                                                             </button>
                                                             <button
                                                                 className="block text-sm text-gray-700 hover:bg-gray-200 px-2 py-1 rounded"

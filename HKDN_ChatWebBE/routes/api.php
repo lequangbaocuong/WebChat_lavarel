@@ -83,6 +83,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/rooms/{roomId}/messages', [MessageController::class, 'getMessages']);
     Route::post('/rooms/{roomId}/messages', [MessageController::class, 'sendMessage']);
     Route::post('/rooms/{roomId}/upload', [MessageController::class, 'uploadFile']);
+    Route::get('/rooms/{roomId}/pinned-messages', [MessageController::class, 'getPinnedMessages']);
     Route::delete('/rooms/{roomId}/messages/{messageId}', [MessageController::class, 'deleteMessage']);
     Route::post('/change-password', [UserController::class, 'changePassword']);
     Route::post('/upload-avatar', [UserController::class, 'uploadAvatar']);

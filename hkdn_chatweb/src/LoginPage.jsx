@@ -43,23 +43,15 @@ const LoginPage = () => {
             localStorage.setItem('auth_token', response.data.access_token);
             localStorage.setItem("user_id", response.data.id); // Store the current user's ID on login
             localStorage.setItem('message', response.data.message);
+            localStorage.setItem('username', response.data.username);
+
             navigate('/home');
           }, 3000);
         }
       } catch (error) {
         if (error.response?.status === 403) {
 
-          // Tài khoản chưa được xác thực
-          // setErrors({ ...errors, form: ( error.response.data.message <>
-          //   <a
-          //     href={resendLink}
-          //     className="text-blue-500 underline"
-          //     target="_blank"
-          //     rel="noopener noreferrer"
-          //   >
-          //     Nhấn vào đây để gửi lại email xác thực
-          //   </a>
-          // </>) });
+
 
           setErrors({
             ...errors,
