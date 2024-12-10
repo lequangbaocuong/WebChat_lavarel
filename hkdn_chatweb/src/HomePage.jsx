@@ -44,7 +44,8 @@ const HomePage = () => {
 
     const [messages, setMessages] = useState([]);
     const [messageInput, setMessageInput] = useState('');
-
+    const [messageQueue, setMessageQueue] = useState([]); // Hàng chờ tin nhắn
+    const [isProcessing, setIsProcessing] = useState(false); // Trạng thái xử lý hàng chờ
     const [callRoom, setCallRoom] = useState(null);
     const [typingTimeout, setTypingTimeout] = useState(null);
     const [file, setFile] = useState(null);
@@ -328,6 +329,50 @@ const HomePage = () => {
             }, 1500)
         );
     };
+
+
+    const addToQueue = (message) => {
+        setMessageQueue((prevQueue) => [...prevQueue, message]);
+    };
+
+    // Hàm xử lý hàng chờ
+    const processQueue = async () => {
+        if (messageQueue.length === 0 || isProcessing) return;
+    
+        setIsProcessing(true);
+        const message = messageQueue[0]; // Lấy tin nhắn đầu tiên trong hàng chờ
+    
+        try {
+            console.log("Đang gửi tin nhắn:", message);
+            // Giả lập gửi tin nhắn lên server với delay 1s
+            await new Promise((resolve) =>
+                setTimeout(async () => {
+                    await fetch(`http://localhost:8000/api/rooms/${selectedChat.id}/messages`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ message }),
+                    });
+                    resolve(); // Kết thúc delay
+                }, 1000)
+            );
+    
+            console.log("Tin nhắn đã gửi:", message);
+        } catch (error) {
+            console.error("Lỗi khi gửi tin nhắn:", error);
+        }
+    
+        // Xóa tin nhắn khỏi hàng chờ và tiếp tục xử lý
+        setMessageQueue((prevQueue) => prevQueue.slice(1));
+        setIsProcessing(false);
+    };
+
+    // Lắng nghe và xử lý hàng chờ
+    useEffect(() => {
+        if (!isProcessing) {
+            processQueue();
+        }
+    }, [messageQueue, isProcessing]);
+
     const handleSendMessage = async () => {
         if (!selectedChat || !messageInput.trim()) return;
 
@@ -349,6 +394,8 @@ const HomePage = () => {
         messageClones.push(message);
 
         setMessages((prevMessages) => [...prevMessages, message]);
+        if (messageInput.trim() === "") return;
+        addToQueue(messageInput); // Thêm tin nhắn vào hàng chờ
         setMessageInput("");
 
         const token = localStorage.getItem("auth_token");
@@ -670,6 +717,13 @@ const HomePage = () => {
                                 </div>
                             )
                         }
+                         {/* Hiển thị hàng chờ tin nhắn */}
+                        <div className="message-queue text-sm text-gray-500 mb-4">
+                            <strong>Hàng chờ:</strong>{" "}
+                            {messageQueue.length > 0
+                                ? messageQueue.join(", ")
+                                : "Không có tin nhắn trong hàng chờ."}
+                        </div>
                         {/* Input for Sending Messages */}
                         <div className="p-4 bg-white border-t border-gray-200 flex items-center">
                             <FiSmile className="text-gray-500 cursor-pointer mr-4" />

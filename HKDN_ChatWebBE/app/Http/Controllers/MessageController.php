@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\SendMessageRequest;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log; // Add this line
+use App\Jobs\SendMessageJob;
+use App\Events\MessageSent;
 
 class MessageController extends Controller
 {
@@ -109,9 +111,9 @@ class MessageController extends Controller
 
         // Tải lại tin nhắn với thông tin người gửi
         $message->load('user');
-
         broadcast(new MessageCreated($roomId, $message))->toOthers();
-
+        SendMessageJob::dispatch($message);
+        broadcast(new MessageSent($roomId, $message))->toOthers();    
         return response()->json([
             'success' => true,
             'message' => 'Tin nhắn đã được gửi.',

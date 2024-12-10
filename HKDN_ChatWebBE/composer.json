@@ -16,6 +16,7 @@
         "laravel/socialite": "^5.16",
         "laravel/tinker": "^2.9",
         "laravel/ui": "^4.5",
+        "predis/predis": "^2.3",
         "pusher/pusher-php-server": "^7.2",
         "symfony/http-foundation": "^7.1"
     },
