@@ -93,7 +93,8 @@ class AuthController extends Controller
             'access_token' => $token,
             'token_type' => 'Bearer',
             'email' => $user->email, // Include email in the response
-            'id' => $user->id
+            'id' => $user->id,
+            'username' => $user->username,
         ]);
     }
 
