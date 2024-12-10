@@ -101,9 +101,18 @@ Route::put('/users/{user_id}/role', [UserController::class, 'updateRole']);
 Route::get('/room/{roomId}/users', [RoomController::class, 'getRoomUser']);
 
 
+
 Route::post('/admin-reset', [UserController::class, 'resetPassword']);
 
 Route::post('/user/profile', [UserController::class, 'getProfile']);
 Route::post('/user/update', [UserController::class, 'updateprofile']);
 
 Route::post('/room/{roomId}/upload', [MessageController::class, 'uploadFile']);
+
+ Route::post('/admin-reset', [UserController::class, 'resetPassword']);
+ 
+ Route::post('/user/profile', [UserController::class, 'getProfile']);
+ Route::post('/user/update', [UserController::class, 'updateprofile']);
+
+
+Route::post('/login_admin', [UserController::class, 'login_admin']);

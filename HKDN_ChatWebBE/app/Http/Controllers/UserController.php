@@ -301,6 +301,7 @@ class UserController extends Controller
             return response()->json(['message' => 'Đã xảy ra lỗi khi cập nhật thông tin', 'error' => $e->getMessage()], 500);
         }
     }
+
     public function uploadAvatar(Request $request)
     {
         $request->validate([
@@ -328,4 +329,39 @@ class UserController extends Controller
 
         return response()->json(['error' => 'No file uploaded'], 400);
     }
+
+
+    //Đăng nhập cho admin
+    public function login_admin(Request $request)
+    {
+        $credentials = $request->only('email', 'password');
+    
+        $user = User::where('email', $credentials['email'])->first();
+    
+        // Kiểm tra nếu email không tồn tại
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Email không tồn tại'], 404);
+        }
+    
+        // Kiểm tra mật khẩu
+        if (!Hash::check($credentials['password'], $user->password)) {
+            return response()->json(['success' => false, 'message' => 'Mật khẩu không đúng'], 401);
+        }
+    
+        // Chỉ cho phép role_id = 1 đăng nhập
+        if ($user->role_id != 1) {
+            return response()->json(['success' => false, 'message' => 'Bạn không có quyền truy cập'], 403);
+        }
+    
+        // Tạo token cho admin
+        $token = $user->createToken('admin-token')->plainTextToken;
+    
+        return response()->json([
+            'success' => true,
+            'access_token' => $token,
+            'email' => $user->email,
+            'id' => $user->id
+        ]);
+    } 
+
 }
