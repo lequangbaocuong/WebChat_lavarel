@@ -281,7 +281,7 @@ class MessageController extends Controller
         }
 
         // Bỏ ghim tin nhắn
-        $message->is_jpinned = false;
+        $message->is_pinned = false;
         $message->save();
 
         return response()->json([

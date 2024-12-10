@@ -50,6 +50,7 @@ const HomePage = () => {
 
     const handleFileChange = (e) => {
         const selectedFile = e.target.files[0];
+        setMessageInput(selectedFile.name);
         if (selectedFile) {
             setFile(selectedFile);
         }
