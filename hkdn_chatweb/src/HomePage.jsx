@@ -115,7 +115,8 @@ const HomePage = () => {
 
             if (response.data.success) {
 
-                setMessages((prevMessages) => [...prevMessages, response.data.data]);
+                setMessages((prevMessages) => [...prevMessages, response.data.message]);
+                fetchMessages(selectedChat.id);
                 return response.data.message;
                 // Trả về thông tin tin nhắn đã upload
             } else {
@@ -136,23 +137,28 @@ const HomePage = () => {
     const [activeMessage, setActiveMessage] = useState(null);
     const [showOptions, setShowOptions] = useState(null);
     const moreButtonRef = useRef(null);
+    const [messageId2, setMessageId2] = useState(null);
     const toggleOptions = (messageId) => {
-        if (activeMessage === messageId) {
-            // Đóng form nếu đã mở
-            setActiveMessage(null);
-        } else {
-            const button = buttonRefs.current[messageId];
-            if (button) {
-                const rect = button.getBoundingClientRect();
-                setFormPosition({
-                    top: rect.top + window.scrollY, // Thêm scrollY để tính chính xác trong viewport
-                    left: rect.left - 120 - 8, // Hiển thị form bên cạnh nút
-                });
-            }
-            setActiveMessage(messageId); // Mở form cho tin nhắn này
-        }
-    };
 
+        setMessageId2(messageId);
+
+        setActiveMessage(prevActiveMessage => {
+            if (prevActiveMessage === messageId) {
+                // Đóng form nếu đã mở
+                return null;
+            } else {
+                const button = buttonRefs.current[messageId];
+                if (button) {
+                    const rect = button.getBoundingClientRect();
+                    setFormPosition({
+                        top: rect.top + window.scrollY, // Thêm scrollY để tính chính xác trong viewport
+                        left: rect.left - 120 - 8, // Hiển thị form bên cạnh nút
+                    });
+                }
+                return messageId; // Mở form cho tin nhắn này
+            }
+        });
+    };
 
     useEffect(() => {
         const token = localStorage.getItem("auth_token");
@@ -294,11 +300,12 @@ const HomePage = () => {
     };
     const pinMessage = async (messageId) => {
         const token = localStorage.getItem("auth_token");
-
+        const id = messageId2;
+        console.log(id);
         try {
             // Gửi yêu cầu pin tin nhắn
             const response = await axios.post(
-                `http://localhost:8000/api/rooms/${selectedChat.id}/messages/${messageId}/pin`,
+                `http://localhost:8000/api/rooms/${selectedChat.id}/messages/${id}/pin`,
                 {}, // Dữ liệu gửi đi nếu cần (trong trường hợp này là một object rỗng)
                 {
                     headers: {
@@ -569,6 +576,10 @@ const HomePage = () => {
 
                             >
                                 {messages.map((message) => {
+                                    if (!message.user_id || !message.user) {
+                                        console.error('Message or user data is incomplete', message);
+                                        return null; // Nếu không có user_id hoặc user, bỏ qua tin nhắn này
+                                    }
                                     const currentUserId = localStorage.getItem("user_id");
                                     const isCurrentUser = Number(message.user_id) === Number(currentUserId);
 
@@ -583,12 +594,14 @@ const HomePage = () => {
                                                     : 'bg-white text-gray-900'
                                                     } ${message.is_pinned ? 'border-2 border-yellow-400' : ''}`}
                                             >
-                                                <p className="text-blue-500">
-                                                    {message.user.username ? message.user.username : localStorage.getItem("username")}
+
+                                                <p className="text-sm text-indigo-500 font-semibold mb-1">
+                                                    {message.user.username}
                                                 </p>
+
                                                 <p>{message.content}</p>
                                                 {message.file_path && (
-                                                    <div className="mt-2">
+                                                    <div className="mt-2 w-40">
                                                         {isImageFile(message.file_path) ? (
                                                             <img
                                                                 src={`http://localhost:8000/storage/${message.file_path}`}
@@ -655,6 +668,8 @@ const HomePage = () => {
                                         </div>
                                     );
                                 })}
+
+
                                 <div ref={messagesEndRef} />
                             </div>
                         </div>

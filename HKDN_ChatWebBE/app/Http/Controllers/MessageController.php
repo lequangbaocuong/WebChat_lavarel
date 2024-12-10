@@ -184,7 +184,7 @@ class MessageController extends Controller
         if ($request->hasFile('file')) {
             // Store the file in the storage
             $filePath = $request->file('file')->store('uploads', 'public');
-
+         
             // Create a new message with the file path
             $message = new Message();
             $message->room_id = $roomId;
@@ -193,9 +193,14 @@ class MessageController extends Controller
             $message->file_path = $filePath;
             $message->save();
 
+            $message->load('user');
+
             return response()->json([
                 'success' => true,
-                'message' => $message,
+                'message' => [
+                    'message' => $message,     // Đưa thông tin tin nhắn vào
+                    'username' => $user->username, // Thêm tên người dùng vào
+                ]
             ]);
         }
 
@@ -276,7 +281,7 @@ class MessageController extends Controller
         }
 
         // Bỏ ghim tin nhắn
-        $message->is_pinned = false;
+        $message->is_jpinned = false;
         $message->save();
 
         return response()->json([
@@ -299,13 +304,8 @@ class MessageController extends Controller
         ], 404);
     }
 
-    // Kiểm tra nếu người dùng có quyền xem phòng (nếu cần)
-    if ($room->creator_id !== $user->id && !$room->members->contains($user->id)) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Bạn không có quyền truy cập vào phòng này.'
-        ], 403);
-    }
+   
+  
 
     // Lấy danh sách tin nhắn đã ghim
     $pinnedMessages = Message::where('room_id', $roomId)
