@@ -1,47 +1,58 @@
 import React, { useState } from "react";
+import { useEffect } from 'react';
 import { FaEye, FaEyeSlash, FaGoogle, FaGithub, FaMicrosoft } from "react-icons/fa";
 import { BiLoaderAlt } from "react-icons/bi";
-import './styles/tailwind.css';
-import { Link } from 'react-router-dom';
-import { handleEmailChange, handlePasswordChange, selectDomain } from './utils/validators';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from "axios";
-import { useNavigate } from 'react-router-dom';
-
+import './styles/tailwind.css';
+import { handleEmailChange, handlePasswordChange, selectDomain } from './utils/validators';
+import NotificationPopup from './Component/NotificationPopup'
+const LogoUrl = "/HKDN.png";
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({ email: "", password: "" });
-
+  const [showNotification, setShowNotification] = useState(false);
   const commonDomains = ["@gmail.com", "@yahoo.com", "@outlook.com", "@hotmail.com"];
+
   const [showSuggestions, setShowSuggestions] = useState(false);
+
   const navigate = useNavigate();
+
+
+  const [loginUrl, setLoginUrl] = useState(null);
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!errors.email && !errors.password && email && password) {
       setLoading(true);
       try {
-        // Gửi yêu cầu đăng nhập đến API Laravel
+        // Send a login request to the Laravel API
         const response = await axios.post("http://localhost:8000/api/login", {
           email,
           password,
         });
 
-        // Xử lý phản hồi từ API
         if (response.data.success) {
-          alert("Đăng nhập thành công");
-          localStorage.setItem('auth_token', response.data.token);
-          navigate('/home');
+
+
+          setShowNotification(true);
+          setTimeout(() => {
+            localStorage.setItem('user_email', response.data.email);
+            localStorage.setItem('auth_token', response.data.access_token);
+            navigate('/home');
+          }, 3000);
         } else {
-          console.log("Đăng nhập thất bại:", response.data.message);
           setErrors({ ...errors, form: response.data.message });
+          console.log("Login failed:", response.data.message);
         }
       } catch (error) {
-        console.error("Lỗi khi đăng nhập:", error.response?.data || error);
-        setErrors({ ...errors, form: "Đăng nhập không thành công. Vui lòng thử lại." });
+        console.error("Login error:", error.response?.data || error);
+        setErrors({ ...errors, form: "Login failed. Please try again." });
       } finally {
-        await new Promise(resolve => setTimeout(resolve, 2000));
         setLoading(false);
       }
     }
@@ -50,26 +61,25 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-2xl transform transition-all hover:scale-[1.01]">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            HKDN Chat
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+        <div className="flex flex-col justify-center items-center">
+          <img className="" src={LogoUrl} alt="Logo" />
+          <p className="mt-2 text-center font-bold text-sm text-indigo-600">
             Vui lòng đăng nhập để tiếp tục
           </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit} method="POST">
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md -space-y-px">
+            {/* Email Input */}
             <div className="relative mb-4">
-              <label htmlFor="email" className="sr-only">Email address</label>
+              <label htmlFor="email" className="sr-only">Email</label>
               <input
                 id="email"
                 name="email"
                 type="email"
                 autoComplete="email"
                 required
-                className={`appearance-none rounded-lg relative block w-full px-3 py-2 border ${errors.email ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm transition-all duration-200`}
+                className={`appearance-none rounded-lg relative block w-full px-3 py-2 border ${errors.email ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
                 placeholder="Email address"
                 value={email}
                 onChange={(e) => handleEmailChange(e, setEmail, setShowSuggestions, setErrors)}
@@ -95,6 +105,7 @@ const LoginPage = () => {
               )}
             </div>
 
+            {/* Password Input */}
             <div className="relative mb-4">
               <label htmlFor="password" className="sr-only">Password</label>
               <input
@@ -103,7 +114,7 @@ const LoginPage = () => {
                 type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
                 required
-                className={`appearance-none rounded-lg relative block w-full px-3 py-2 border ${errors.password ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm transition-all duration-200`}
+                className={`appearance-none rounded-lg relative block w-full px-3 py-2 border ${errors.password ? 'border-red-300' : 'border-gray-300'} placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
                 placeholder="Password"
                 value={password}
                 onChange={(e) => handlePasswordChange(e, setPassword, setErrors)}
@@ -126,26 +137,24 @@ const LoginPage = () => {
 
           <div className="flex items-center justify-between">
             <div className="text-sm">
-              <Link to="/forget" className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors duration-200">
+              <Link to="/forget" className="font-medium text-indigo-600 hover:text-indigo-500">
                 Quên mật khẩu?
               </Link>
             </div>
           </div>
 
+          {/* Submit Button */}
           <div>
             <button
               type="submit"
               disabled={loading || errors.email || errors.password}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
-              {loading ? (
-                <BiLoaderAlt className="animate-spin h-5 w-5" />
-              ) : (
-                "Sign in"
-              )}
+              {loading ? <BiLoaderAlt className="animate-spin h-5 w-5" /> : "Đăng nhập"}
             </button>
           </div>
 
+          {/* Alternative Sign-In Options */}
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -159,19 +168,21 @@ const LoginPage = () => {
             <div className="mt-6 grid grid-cols-3 gap-3">
               <button
                 type="button"
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition-all duration-200"
+                onClick={() => window.location.href = loginUrl} // Wrap in a function
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                disabled={!loginUrl} // Optionally disable button until `loginUrl` is set
               >
                 <FaGoogle className="h-5 w-5 text-red-500" />
               </button>
               <button
                 type="button"
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition-all duration-200"
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
               >
                 <FaGithub className="h-5 w-5 text-gray-900" />
               </button>
               <button
                 type="button"
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition-all duration-200"
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
               >
                 <FaMicrosoft className="h-5 w-5 text-blue-500" />
               </button>
@@ -180,12 +191,13 @@ const LoginPage = () => {
         </form>
 
         <p className="mt-8 text-center text-sm text-gray-600">
-          Bạn không có tài khoản?{" "}
+          Không có tài khoản?{" "}
           <Link to="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
             Đăng ký ngay
           </Link>
         </p>
       </div>
+      {showNotification && (<NotificationPopup />)}
     </div>
   );
 };
