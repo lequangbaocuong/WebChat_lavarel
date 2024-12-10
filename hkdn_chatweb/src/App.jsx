@@ -11,6 +11,7 @@ import HomePage from "./HomePage";
 
 import ResetPassPage from "./ResetPassPage";
 import VideoCallPage from "./VideoCallPage";
+import CallPage from "./Pages/CallPage";
 import OTPInput from "./OTPInput";
 
 import AdminLayout from "./Component/Admin/AdminLayout";
@@ -33,7 +34,7 @@ const App = () => {
         <Route path="/reset-password" element={<ResetPassPage />} />
         <Route path="/test" element={<Navbar />} />
         <Route path="/home" element={<HomePage />} />
-        <Route path="/videocall" element={<VideoCallPage />} />
+        <Route path="/video-call" element={<CallPage />} />
         <Route path="/OTP" element={<OTPInput />} />
 
         <Route path="/admin/login" element={<Login />} />

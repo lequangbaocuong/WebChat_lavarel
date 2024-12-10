@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('messages', function (Blueprint $table) {
-            $table->string('file_path')->nullable()->default(null); // Thêm cột file_path với giá trị mặc định là 'falt'
+        Schema::table('table_rooms', function (Blueprint $table) {
+            $table->string('call_room')->nullable();
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('messages', function (Blueprint $table) {
-            $table->dropColumn('file_path'); // Xóa cột file_path nếu rollback
+        Schema::table('table_rooms', function (Blueprint $table) {
+            $table->dropColumn('call_room');
         });
     }
 };

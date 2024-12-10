@@ -11,15 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('messages', function (Blueprint $table) {
+        Schema::create('call_users', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
             $table->unsignedBigInteger('room_id');
+            $table->timestamp('last_heartbeat_at')->nullable();
+            $table->timestamps();
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('room_id')->references('id')->on('table_rooms')->onDelete('cascade');
-            $table->boolean('is_pinned')->default(false); // Đánh dấu tin nhắn được ghim
-            $table->text('content'); // Nội dung tin nhắn
-            $table->timestamps();
+            $table->index(['user_id', 'room_id']);
         });
     }
 
@@ -28,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('messages');
+        Schema::dropIfExists('call_users');
     }
 };

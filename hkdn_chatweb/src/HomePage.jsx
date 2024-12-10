@@ -1,17 +1,20 @@
 import React, { useState, useEffect, useRef } from "react";
 import { IoMdSend } from "react-icons/io";
-import { MdVideocam, MdCall } from 'react-icons/md';
+import { MdVideocam, MdCall, MdMoreVert } from 'react-icons/md';
 import { FiPaperclip, FiSmile } from "react-icons/fi";
+import { AiFillHeart } from "react-icons/ai"
 import { BsThreeDotsVertical, BsSearch } from "react-icons/bs";
 import { AiOutlineUserAdd, AiOutlineUsergroupAdd } from "react-icons/ai";
 import { FaCheck, FaExclamationCircle } from "react-icons/fa";
 import IntroPage from "./Component/IntroductionPage";
 import Profile from "./Component/ProfilePage";
+import { BiPin } from "react-icons/bi";
 import SidebarIcons from "./Component/SidebarIcons";
 import NotificationPopup from './Component/NotificationPopup'
 import axios from "axios";
 import GroupMemberModal from "./Component/GroupMemberModal";
-
+import { FaSync } from "react-icons/fa";
+import PinnedMessagesForm from "./Component/PinnedMessagesForm";
 const HomePage = () => {
     const [selectedChat, setSelectedChat] = useState(null);
     const [message, setMessage] = useState("");
@@ -32,13 +35,14 @@ const HomePage = () => {
     const [groups, setGroups] = useState([]);
     const [isTyping, setIsTyping] = useState(false);
     const [showNotification, setShowNotification] = useState(false);
-
+    const [username, setUsername] = useState('');
     const [showMemberModal, setShowMemberModal] = useState(false);
     const [roomUsers, setRoomUsers] = useState([]);
 
-    const [selectedRoom, setSelectedRoom] = useState(null);
     const [messages, setMessages] = useState([]);
     const [messageInput, setMessageInput] = useState('');
+    const [formPosition, setFormPosition] = useState({ top: 0, left: 0 });
+    const [callRoom, setCallRoom] = useState(null);
 
     const [file, setFile] = useState(null);
     const [uploading, setUploading] = useState(false);
@@ -110,6 +114,9 @@ const HomePage = () => {
             );
 
             if (response.data.success) {
+
+                setMessages((prevMessages) => [...prevMessages, response.data.message]);
+                fetchMessages(selectedChat.id);
                 return response.data.message;
                 // Trả về thông tin tin nhắn đã upload
             } else {
@@ -126,8 +133,32 @@ const HomePage = () => {
         console.log("Current User ID:", currentUserId);
         console.log("Messages:", messages);
     }, [messages]); // Kiểm tra mỗi khi messages thay đổi
+    const buttonRefs = useRef({});
+    const [activeMessage, setActiveMessage] = useState(null);
+    const [showOptions, setShowOptions] = useState(null);
+    const moreButtonRef = useRef(null);
+    const [messageId2, setMessageId2] = useState(null);
+    const toggleOptions = (messageId) => {
 
+        setMessageId2(messageId);
 
+        setActiveMessage(prevActiveMessage => {
+            if (prevActiveMessage === messageId) {
+                // Đóng form nếu đã mở
+                return null;
+            } else {
+                const button = buttonRefs.current[messageId];
+                if (button) {
+                    const rect = button.getBoundingClientRect();
+                    setFormPosition({
+                        top: rect.top + window.scrollY, // Thêm scrollY để tính chính xác trong viewport
+                        left: rect.left - 120 - 8, // Hiển thị form bên cạnh nút
+                    });
+                }
+                return messageId; // Mở form cho tin nhắn này
+            }
+        });
+    };
 
     useEffect(() => {
         const token = localStorage.getItem("auth_token");
@@ -166,12 +197,7 @@ const HomePage = () => {
     }, []);
 
 
-    useEffect(() => {
-        if (selectedRoom) {
-            fetchMessages(selectedRoom);
-            fetchRoomUser();
-        }
-    }, [selectedRoom]);
+
 
     const handleKeyPress = (e) => {
         if (e.key === "Enter" && !e.shiftKey) {
@@ -225,20 +251,12 @@ const HomePage = () => {
                 });
         }
     };
-    const handleViewProfile = () => {
-        console.log(showProfilePage);
-        setShowProfilePage(true);
-        setShowAvatarMenu(false);
-    };
+
 
     const closeProfilePage = () => {
         setShowProfilePage(false);
     };
 
-    const toggleAvatarMenu = (e) => {
-        e.stopPropagation();
-        setShowAvatarMenu((prev) => !prev);
-    };
 
     // Hàm để lấy thành viên nhóm
     const fetchRoomUser = (roomId) => {
@@ -280,14 +298,55 @@ const HomePage = () => {
             console.error("Error fetching messages:", error.message);
         }
     };
+    const pinMessage = async (messageId) => {
+        const token = localStorage.getItem("auth_token");
+        const id = messageId2;
+        console.log(id);
+        try {
+            // Gửi yêu cầu pin tin nhắn
+            const response = await axios.post(
+                `http://localhost:8000/api/rooms/${selectedChat.id}/messages/${id}/pin`,
+                {}, // Dữ liệu gửi đi nếu cần (trong trường hợp này là một object rỗng)
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            // Kiểm tra nếu pin thành công
+            if (response.data.success) {
+                setMessages((prevMessages) =>
+                    prevMessages.map((message) =>
+                        message.id === messageId
+                            ? { ...message, pinned: true } // Đánh dấu tin nhắn đã ghim
+                            : message
+                    )
+                );
+                setActiveMessage(null); // Đóng form nếu có
+            } else {
+                console.error("Không thể ghim tin nhắn");
+            }
+        } catch (err) {
+            console.error("Lỗi khi ghim tin nhắn:", err);
+        }
+    };
 
 
+
+
+    // Thiết lập interval để cập nhật tin nhắn mỗi 3 giây
 
     useEffect(() => {
-        if (selectedRoom) {
-            fetchMessages(selectedRoom.id);  // Lấy tin nhắn từ server
-        }
-    }, [selectedRoom]);
+        const interval = setInterval(() => {
+            // Gọi fetchMessages mỗi 3 giây để lấy tin nhắn mới
+            if (selectedChat) {
+                fetchMessages(selectedChat.id);  // Gọi hàm để lấy tin nhắn mới
+            }
+        }, 30000); // 3 giây
+
+        return () => clearInterval(interval);
+    }, [selectedChat]);
 
 
     const handleSendMessage = async () => {
@@ -354,10 +413,25 @@ const HomePage = () => {
         }
     };
 
+    let callWindowRef = null;
+
+    const makeCall = (useVideo) => {
+        if (callWindowRef == null || callWindowRef.closed) {
+            callWindowRef = window.open(
+                `${window.location.origin}/video-call?roomId=${selectedChat.id}&video=${useVideo}`,
+                'callWindow'
+            );
+        } else {
+            callWindowRef.focus();
+        }
+    }
+
+
     useEffect(() => {
         if (selectedChat) {
             fetchMessages(selectedChat.id); // Lấy tin nhắn của nhóm đã chọn
             fetchRoomUser(selectedChat.id); // Lấy thành viên nhóm đã chọn
+            // fetchCallRoom(selectedChat.id);
         }
     }, [selectedChat]); // Lắng nghe sự thay đổi của selectedChat
 
@@ -372,6 +446,15 @@ const HomePage = () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, []);
+    const [isFormVisible, setFormVisible] = useState(false);
+    const handleShowForm = (roomId) => {
+        console.log(roomId);
+        setFormVisible(true); // Hiển thị form
+    };
+    const handleCloseForm = () => {
+        fetchMessages(selectedChat.id);
+        setFormVisible(false); // Ẩn form
+    };
 
     return (
         <div className="flex h-full">
@@ -457,9 +540,17 @@ const HomePage = () => {
                                 </div>
                             </div>
                             <div className="flex space-x-4">
-                                <MdCall className="text-gray-600 cursor-pointer text-lg" />
-                                <MdVideocam className="text-gray-600 cursor-pointer text-lg" />
+                                <BiPin onClick={() => handleShowForm(selectedChat.id)} size={22} className="text-gray-600 cursor-pointer text-lg" />
+                                {isFormVisible && (
+                                    <PinnedMessagesForm
+                                        roomId={selectedChat.id} // Truyền ID phòng sang form
+                                        onClose={handleCloseForm} // Đóng form
+                                    />
+                                )}
+                                <MdCall onClick={() => { makeCall(false) }} className="text-gray-600 cursor-pointer text-lg" />
+                                <MdVideocam onClick={() => { makeCall(true) }} className="text-gray-600 cursor-pointer text-lg" />
                                 <BsThreeDotsVertical className="text-gray-600 cursor-pointer" onClick={toggleChatMenu} />
+
                                 {showChatMenu && (
                                     <div
                                         ref={chatMenuRef}
@@ -485,6 +576,10 @@ const HomePage = () => {
 
                             >
                                 {messages.map((message) => {
+                                    if (!message.user_id || !message.user) {
+                                        console.error('Message or user data is incomplete', message);
+                                        return null; // Nếu không có user_id hoặc user, bỏ qua tin nhắn này
+                                    }
                                     const currentUserId = localStorage.getItem("user_id");
                                     const isCurrentUser = Number(message.user_id) === Number(currentUserId);
 
@@ -494,11 +589,19 @@ const HomePage = () => {
                                             className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-4`}
                                         >
                                             <div
-                                                className={`max-w-[70%] rounded-lg p-3 ${isCurrentUser ? 'bg-indigo-600 text-white' : 'bg-white text-gray-900'} shadow-sm`}
+                                                className={`max-w-[70%] rounded-lg p-3 shadow-sm ${isCurrentUser
+                                                    ? 'bg-indigo-600 text-white'
+                                                    : 'bg-white text-gray-900'
+                                                    } ${message.is_pinned ? 'border-2 border-yellow-400' : ''}`}
                                             >
+
+                                                <p className="text-sm text-indigo-500 font-semibold mb-1">
+                                                    {message.user.username}
+                                                </p>
+
                                                 <p>{message.content}</p>
                                                 {message.file_path && (
-                                                    <div className="mt-2">
+                                                    <div className="mt-2 w-40">
                                                         {isImageFile(message.file_path) ? (
                                                             <img
                                                                 src={`http://localhost:8000/storage/${message.file_path}`}
@@ -517,13 +620,56 @@ const HomePage = () => {
                                                         )}
                                                     </div>
                                                 )}
-                                                <p className={`text-xs mt-1 ${isCurrentUser ? 'text-indigo-200' : 'text-gray-500'}`}>
+                                                <p className={`mb-2 text-xs mt-1 ${isCurrentUser ? 'text-indigo-200' : 'text-gray-500'}`}>
                                                     {new Date(message.created_at).toLocaleTimeString()}
                                                 </p>
+
+                                                <div className="flex space-x-4">
+
+
+                                                    {/* Nút trái tim */}
+                                                    <button className="w-5 h-5 flex items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-red-500 shadow-lg hover:from-pink-600 hover:to-red-600 transform hover:scale-110 transition">
+                                                        <AiFillHeart size={15} className="text-white" />
+                                                    </button>
+                                                    <button
+                                                        ref={(el) => (buttonRefs.current[message.id] = el)} // Gắn ref cho nút More
+                                                        onClick={() => toggleOptions(message.id)}
+                                                        className="w-5 h-5 flex items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-blue-500 shadow-lg hover:from-purple-600 hover:to-blue-600 transform hover:scale-110 transition"
+                                                    >
+                                                        <MdMoreVert size={15} className="text-white" />
+                                                    </button>
+                                                    {activeMessage && (
+                                                        <div
+                                                            style={{
+                                                                position: "fixed",
+                                                                top: `${formPosition.top}px`,
+                                                                left: `${formPosition.left}px`,
+                                                            }}
+                                                            className="bg-white border shadow-md rounded-lg py-2 px-4 z-50"
+                                                        >
+                                                            <button
+                                                                onClick={() => pinMessage(message.id)}
+                                                                className="block text-sm text-gray-700 hover:bg-gray-200 px-2 py-1 rounded"
+
+                                                            >
+                                                                Ghim
+
+                                                            </button>
+                                                            <button
+                                                                className="block text-sm text-gray-700 hover:bg-gray-200 px-2 py-1 rounded"
+                                                                onClick={() => console.log("Recall message")}
+                                                            >
+                                                                Thu hồi
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     );
                                 })}
+
+
                                 <div ref={messagesEndRef} />
                             </div>
                         </div>
