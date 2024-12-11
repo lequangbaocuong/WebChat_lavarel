@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('status')->default('active'); // Thêm cột status
             $table->string('avatar')->nullable()->default("user.png");
             $table->string('phone')->nullable()->default(null);
+            $table->string('fcm_token')->unique();
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
